@@ -1,5 +1,5 @@
 import { Dialog } from '../molecules/Dialog'
-import { GoogleSignInButton } from '../molecules/GoogleSignInButton'
+import { AuthForm } from './AuthForm'
 
 export type AuthMode = 'signin' | 'signup'
 
@@ -15,17 +15,10 @@ interface AuthDialogProps {
   onClose: () => void
 }
 
-export function AuthDialog({ open, mode, freeCredits, googleClientId, busy, error, onCredential, onError, onClose }: AuthDialogProps) {
-  const signUp = mode === 'signup'
-
+export function AuthDialog({ open, mode, onClose, ...form }: AuthDialogProps) {
   return (
-    <Dialog open={open} title={signUp ? 'Create your account' : 'Sign in'} onClose={onClose}>
-      <div className="form">
-        {freeCredits > 0 && <p className="muted small">New accounts get {freeCredits} free AI edits.</p>}
-        {open && <GoogleSignInButton clientId={googleClientId} text={signUp ? 'signup_with' : 'signin_with'} onCredential={onCredential} onError={onError} />}
-        {busy && <p className="muted small">Signing you in…</p>}
-        {error && <p className="error" role="alert">{error}</p>}
-      </div>
+    <Dialog open={open} title={mode === 'signup' ? 'Create your account' : 'Sign in'} onClose={onClose}>
+      {open && <AuthForm mode={mode} {...form} />}
     </Dialog>
   )
 }

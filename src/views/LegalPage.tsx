@@ -1,24 +1,41 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import type { CreditPack } from '../api/credits'
+import { BUSINESS } from '../lib/business'
 import { useApp } from '../state/appContext'
 import { SiteLayout } from './SiteLayout'
 
-export type LegalKind = 'terms' | 'privacy' | 'refunds' | 'contact'
+export type LegalKind = 'terms' | 'privacy' | 'refunds' | 'shipping' | 'contact'
 
-const UPDATED = '8 October 2026'
+const UPDATED = '18 October 2026'
 
-function content(kind: LegalKind, business: string, email: string): { title: string; body: ReactNode } {
+const inr = (paise: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(paise / 100)
+
+function content(kind: LegalKind, business: string, email: string, packs: CreditPack[]): { title: string; body: ReactNode } {
   const mail = email ? <a href={`mailto:${email}`}>{email}</a> : 'our support email'
+  const phone = <a href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`}>{BUSINESS.phone}</a>
   switch (kind) {
     case 'terms':
       return {
-        title: 'Terms of use',
+        title: 'Terms & Conditions',
         body: (
           <>
-            <p>These terms apply to {business} (the "service"). By using the service you agree to them.</p>
+            <p>
+              These terms apply to {business} (the "service"), operated by {BUSINESS.operator} (<a href={BUSINESS.website}>wehelpu.in</a>), {BUSINESS.location}. By using the service you agree to them.
+            </p>
             <h2>What the service does</h2>
             <p>The service lets you replace text in images you upload. Basic features are free. AI exact-match edits use credits that you buy in advance.</p>
+            <h2>Services and prices</h2>
+            <p>All prices are in Indian Rupees (INR) and include applicable taxes.</p>
+            <ul>
+              <li>Free plan: {inr(0)}. Text detection, font-matched edits, crop and PNG/PDF download.</li>
+              {packs.map((p) => (
+                <li key={p.id}>
+                  {p.name} pack: {inr(p.amount)} for {p.credits} AI edit credits ({inr(Math.round(p.amount / p.credits))} per edit).
+                </li>
+              ))}
+            </ul>
             <h2>Allowed use</h2>
             <p>Only edit images you own or have the right to change. You must not use the service to:</p>
             <ul>
@@ -30,7 +47,7 @@ function content(kind: LegalKind, business: string, email: string): { title: str
             <h2>Accounts</h2>
             <p>You sign in with your Google account; keep it secure. You are responsible for activity in your account. One person per account.</p>
             <h2>Credits and payments</h2>
-            <p>Credits are sold in packs, are charged in advance through Cashfree and do not expire. One credit is used per AI edit. See the refund policy for when credits are returned.</p>
+            <p>Credits are sold in packs, are charged in advance through Cashfree and do not expire. One credit is used per AI edit. See the Refund & Cancellation policy for when credits and money are returned.</p>
             <h2>AI results</h2>
             <p>AI results are automatically checked but can still contain mistakes. Review every result before you use it.</p>
             <h2>Liability</h2>
@@ -42,7 +59,7 @@ function content(kind: LegalKind, business: string, email: string): { title: str
       }
     case 'privacy':
       return {
-        title: 'Privacy policy',
+        title: 'Privacy Policy',
         body: (
           <>
             <h2>What we store</h2>
@@ -67,9 +84,10 @@ function content(kind: LegalKind, business: string, email: string): { title: str
       }
     case 'refunds':
       return {
-        title: 'Refund policy',
+        title: 'Refund & Cancellation Policy',
         body: (
           <>
+            <p>{business} sells digital credits that are added to your account instantly after payment. This policy explains when you get credits or money back.</p>
             <h2>Credits returned automatically</h2>
             <p>If an AI edit fails because of a technical error, the credit is returned straight away.</p>
             <h2>Results that fail our checks</h2>
@@ -80,16 +98,42 @@ function content(kind: LegalKind, business: string, email: string): { title: str
               refund to your original payment method. Approved refunds are usually processed by Cashfree in 5–7 working days.
             </p>
             <p>Credits that have already been used for edits are not refundable.</p>
+            <h2>Cancellation</h2>
+            <p>
+              Credit packs are one-time purchases, not subscriptions, so there is nothing to cancel and you are never charged again
+              automatically. If a payment was taken but credits did not reach your account, write to {mail} or call {phone} with your
+              order id and we will add the credits or refund the payment in full.
+            </p>
+            <p>You can delete your account at any time from Account settings.</p>
+          </>
+        ),
+      }
+    case 'shipping':
+      return {
+        title: 'Shipping & Delivery Policy',
+        body: (
+          <>
+            <p>{business} is an online service. Nothing is shipped physically.</p>
+            <h2>Delivery of credits</h2>
+            <p>Credits are delivered digitally to your account within a few seconds of a successful payment, and you see the new balance on screen. If they do not appear within 30 minutes, contact us at {mail} or {phone} with your order id.</p>
+            <h2>Delivery of edited images</h2>
+            <p>Edited images are created in your browser and downloaded straight to your device as PNG or PDF.</p>
           </>
         ),
       }
     case 'contact':
       return {
-        title: 'Contact us',
+        title: 'Contact Us',
         body: (
           <>
-            <p>Questions about your account, a payment or an edit? We usually reply within one working day.</p>
-            <p>Email: {mail}</p>
+            <p>Questions about your account, a payment, a refund or an edit? We usually reply within one working day.</p>
+            <ul>
+              <li>Email: {mail}</li>
+              <li>Phone / WhatsApp: {phone} (<a href={BUSINESS.whatsapp}>open WhatsApp chat</a>)</li>
+              <li>Operated by: {BUSINESS.operator}, <a href={BUSINESS.website}>wehelpu.in</a></li>
+              <li>Location: {BUSINESS.location}</li>
+              <li>Working hours: {BUSINESS.hours}</li>
+            </ul>
             <p>Please include the email address of your account and, for payments, the order id from your receipt.</p>
           </>
         ),
@@ -97,9 +141,9 @@ function content(kind: LegalKind, business: string, email: string): { title: str
   }
 }
 
-export function LegalPage({ kind }: { kind: LegalKind }) {
+export function LegalPage({ kind, packs = [] }: { kind: LegalKind; packs?: CreditPack[] }) {
   const { config } = useApp()
-  const { title, body } = content(kind, config.businessName, config.supportEmail)
+  const { title, body } = content(kind, config.businessName, config.supportEmail, packs)
   return (
     <SiteLayout>
       <div className="page">

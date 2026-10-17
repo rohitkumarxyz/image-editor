@@ -48,12 +48,12 @@ const FAQ = [
   { question: 'How do I pay?', answer: 'Through Cashfree: UPI, debit and credit cards, net banking and wallets. Credits are added as soon as the payment is confirmed.' },
 ]
 
-export function LandingPage() {
+export function LandingPage({ initialPacks }: { initialPacks: CreditPack[] }) {
   const session = useSession()
   const { config, openAccount, setPendingFile } = useApp()
   const { navigate } = useRouter()
   const toast = useToast()
-  const [packs, setPacks] = useState<CreditPack[] | null>(null)
+  const [packs, setPacks] = useState<CreditPack[] | null>(initialPacks)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {

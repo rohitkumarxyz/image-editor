@@ -11,15 +11,6 @@ export interface AppValue {
   takePendingFile: () => File | null
 }
 
-export const DEFAULT_CONFIG: PublicConfig = {
-  aiEditCost: 1,
-  signupCredits: 3,
-  paymentsEnabled: false,
-  businessName: 'Image Text Editor',
-  supportEmail: '',
-  googleClientId: '',
-}
-
 export const AppContext = createContext<AppValue | null>(null)
 
 export function useApp(): AppValue {

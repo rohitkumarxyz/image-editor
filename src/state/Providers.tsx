@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, type ReactNode } from 'react'
+import type { PublicConfig } from '../api/config'
 import { AppProvider } from './AppProvider'
 import { RouterProvider } from './RouterProvider'
 import { useRouter } from './routerContext'
@@ -17,13 +18,13 @@ function ThemeSync() {
 }
 
 /** App-wide state shared by every page; lives in the root layout so it survives page changes. */
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, initialConfig }: { children: ReactNode; initialConfig: PublicConfig }) {
   return (
     <RouterProvider>
       <ThemeSync />
       <SessionProvider>
         <ToastProvider>
-          <AppProvider>{children}</AppProvider>
+          <AppProvider initialConfig={initialConfig}>{children}</AppProvider>
         </ToastProvider>
       </SessionProvider>
     </RouterProvider>

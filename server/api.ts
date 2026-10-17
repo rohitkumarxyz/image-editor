@@ -1,4 +1,4 @@
-import type { Config } from './config.ts'
+import { publicConfig, type Config } from './config.ts'
 import type { Database } from './db.ts'
 import { isJson, readJson, readRaw } from './http/body.ts'
 import { parseCookies, sessionCookie, type SessionCookie } from './http/cookies.ts'
@@ -90,16 +90,7 @@ export function createApi({ config, db, aiProvider, paymentGateway, googleVerifi
       return Reply.json({ ok: true })
     }),
     /** Public settings the UI shows (prices come from /payments/packs). */
-    get('/api/config', [], () =>
-      Reply.json({
-        aiEditCost: config.AI_EDIT_COST,
-        signupCredits: config.SIGNUP_FREE_CREDITS,
-        paymentsEnabled: payments.enabled,
-        businessName: config.BUSINESS_NAME,
-        supportEmail: config.SUPPORT_EMAIL,
-        googleClientId: config.GOOGLE_CLIENT_ID,
-      }),
-    ),
+    get('/api/config', [], () => Reply.json(publicConfig(config, payments.enabled))),
   ]
   // Signature-verified server-to-server call: no cookies, no Origin, raw body.
   const webhookRoutes = [post('/', [], (req) => paymentsWebhook(payments, req))]

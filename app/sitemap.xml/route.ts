@@ -2,7 +2,7 @@ import { getConfig } from '../../server/container.ts'
 
 export const dynamic = 'force-dynamic'
 
-const PUBLIC_PAGES = ['/', '/terms', '/privacy', '/refunds', '/contact']
+const PUBLIC_PAGES = ['/', '/terms', '/privacy', '/refunds', '/shipping', '/contact']
 
 export function GET(): Response {
   const origin = getConfig().APP_ORIGIN

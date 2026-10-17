@@ -76,6 +76,21 @@ export type Config = Omit<z.infer<typeof envSchema>, 'CREDIT_PACKS' | 'CASHFREE_
   isProduction: boolean
 }
 
+/** Settings the browser may see; served by /api/config and rendered into the first HTML so crawlers see them too. */
+export function publicConfig(config: Config, paymentsEnabled: boolean) {
+  return {
+    aiEditCost: config.AI_EDIT_COST,
+    signupCredits: config.SIGNUP_FREE_CREDITS,
+    paymentsEnabled,
+    businessName: config.BUSINESS_NAME,
+    supportEmail: config.SUPPORT_EMAIL,
+    googleClientId: config.GOOGLE_CLIENT_ID,
+  }
+}
+
+/** Credit packs as the browser expects them (currency included). */
+export const publicPacks = (config: Config) => config.packs.map((p) => ({ ...p, currency: config.CURRENCY }))
+
 /** Reads and checks all settings once at boot; a missing or malformed value stops the server with a clear message. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const isProduction = env.NODE_ENV === 'production'
