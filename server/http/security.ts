@@ -24,7 +24,8 @@ export function securityHeaders({ isProduction, nonce, allowEval = false }: Secu
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",
-    "form-action 'self'",
+    // Cashfree's SDK posts a form into its checkout iframe.
+    "form-action 'self' https://*.cashfree.com",
     `script-src ${scriptSrc.join(' ')}`,
     "worker-src 'self' blob: https://cdn.jsdelivr.net",
     "connect-src 'self' data: blob: https://cdn.jsdelivr.net https://*.cashfree.com https://accounts.google.com/gsi/",
