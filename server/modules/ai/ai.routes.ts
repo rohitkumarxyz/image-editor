@@ -13,14 +13,12 @@ const MAX_EDGE = 3840
 const MAX_ASPECT = 3
 const SIZE_STEP = 16
 
-/** Strips line breaks and quotes from text that goes into the AI prompt. */
 const promptText = (max: number) =>
   z
     .string()
     .max(max, `Text is too long (max ${max} characters).`)
     .transform((t) => t.replace(/[\r\n\t"]+/g, ' ').trim())
 
-/** OpenAI's size rules: sides multiple of 16, edge ≤ 3840, ratio ≤ 3:1, pixel count in range. */
 const outputSize = z.string().refine((s) => {
   const match = /^(\d{2,4})x(\d{2,4})$/.exec(s)
   if (!match) return false
@@ -59,7 +57,6 @@ const editBody = z.object({
     .string()
     .regex(/^#[0-9a-f]{6}$/i)
     .optional(),
-  /** Closest known font from the browser's font matcher, e.g. "Poppins, bold". */
   fontHint: promptText(80).optional(),
 })
 
@@ -72,7 +69,6 @@ const detectBody = z.object({
   height: z.number().int().min(1).max(4096),
 })
 
-/** Every AI route needs a signed-in user; the mount adds `requireUser` in front of them. */
 export function aiRoutes(ai: AiService): Route[] {
   return [
     post('/edit', [], async (req) => Reply.json(await ai.edit(req.user!, parse(editBody, req.body)))),

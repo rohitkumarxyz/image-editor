@@ -3,17 +3,12 @@ import { AppError } from '../lib/errors.ts'
 import type { SessionCookie } from './cookies.ts'
 import { serializeCookie } from './cookies.ts'
 
-/** One API request after the body, cookies and session have been read. */
 export interface ApiRequest {
   method: string
-  /** Path without the query string, e.g. `/api/auth/me`. */
   path: string
   headers: Headers
-  /** Client IP, resolved through `TRUST_PROXY` reverse proxies. */
   ip: string
-  /** Parsed JSON body; undefined when the request had no JSON body. */
   body: unknown
-  /** Raw bytes, only for routes that verify a signature over them (the payment webhook). */
   rawBody?: Buffer
   cookies: Record<string, string>
   params: Record<string, string>
@@ -21,10 +16,8 @@ export interface ApiRequest {
   sessionToken?: string
 }
 
-/** What a handler answers; turned into a web `Response` at the edge of the API. */
 export class Reply {
   readonly status: number
-  /** JSON body; undefined sends an empty body (e.g. 204). */
   readonly body: unknown
   readonly headers = new Headers()
 
@@ -64,7 +57,6 @@ export interface Route {
   handler: Handler
 }
 
-/** Express-style path: `:name` segments become params; case-insensitive and a trailing slash is allowed. */
 function compile(path: string): { pattern: RegExp; keys: string[] } {
   const keys: string[] = []
   const source = path
@@ -85,14 +77,12 @@ function route(method: Route['method'], path: string, middleware: Middleware[], 
 export const get = (path: string, middleware: Middleware[], handler: Handler) => route('GET', path, middleware, handler)
 export const post = (path: string, middleware: Middleware[], handler: Handler) => route('POST', path, middleware, handler)
 
-/** A group of routes under one path prefix, like `app.use(prefix, ...middleware, router)` in Express. */
 export interface Mount {
   prefix: string
   middleware: Middleware[]
   routes: Route[]
 }
 
-/** Runs `middleware` in order, then `last`; each one decides whether to call the next. */
 export function run(req: ApiRequest, middleware: Middleware[], last: Next): Promise<Reply> {
   const step = (i: number): Promise<Reply> => (i < middleware.length ? middleware[i](req, () => step(i + 1)) : last())
   return step(0)
@@ -106,7 +96,6 @@ function decodeParam(value: string): string {
   }
 }
 
-/** Runs the first route matching the method (HEAD counts as GET) and `path`; null when none matches. */
 export function dispatchRoutes(req: ApiRequest, routes: Route[], path: string): Promise<Reply> | null {
   const method = req.method === 'HEAD' ? 'GET' : req.method
   for (const r of routes) {
@@ -119,7 +108,6 @@ export function dispatchRoutes(req: ApiRequest, routes: Route[], path: string): 
   return null
 }
 
-/** Matches `req` against a mount; null when the path is outside the mount's prefix. */
 export function dispatchMount(req: ApiRequest, mount: Mount, notFound: Next): Promise<Reply> | null {
   const lower = req.path.toLowerCase()
   const prefix = mount.prefix.toLowerCase()
@@ -128,7 +116,6 @@ export function dispatchMount(req: ApiRequest, mount: Mount, notFound: Next): Pr
   return run(req, mount.middleware, () => dispatchRoutes(req, mount.routes, rest) ?? notFound())
 }
 
-/** Signed-in users only; route handlers after this can rely on `req.user`. */
 export const requireUser: Middleware = async (req, next) => {
   if (!req.user) throw new AppError('unauthorized', 'Please sign in to continue.')
   return next()

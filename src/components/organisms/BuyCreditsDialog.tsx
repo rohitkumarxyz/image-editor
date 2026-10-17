@@ -10,7 +10,6 @@ interface BuyCreditsDialogProps {
   balance: number
   packs: CreditPack[] | null
   paymentsEnabled: boolean
-  /** Phone saved on the account, used to prefill the field. */
   savedPhone: string | null
   busyPackId: string | null
   error: string | null
@@ -18,7 +17,6 @@ interface BuyCreditsDialogProps {
   onClose: () => void
 }
 
-/** Loose check so the button can say what's wrong; the server does the real validation. */
 const looksLikePhone = (value: string) => /^\+?\d{10,15}$/.test(value.replace(/[\s()-]/g, ''))
 
 function formatPrice(amount: number, currency: string): string {

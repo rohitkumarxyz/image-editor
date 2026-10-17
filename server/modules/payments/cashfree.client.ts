@@ -12,27 +12,22 @@ const REQUEST_TIMEOUT_MS = 15_000
 
 export interface CreateOrderInput {
   orderId: string
-  /** Smallest currency unit (paise); converted to rupees for Cashfree. */
   amount: number
   currency: string
   customer: { id: string; name: string; email: string; phone: string }
   note: string
-  /** Where Cashfree sends the user after bank / UPI pages that leave the popup; `{order_id}` is filled in. */
   returnUrl: string | null
   notifyUrl: string | null
 }
 
 export interface PaidPayment {
   paymentId: string
-  /** Paise. */
   amount: number
 }
 
-/** The payment provider as the service sees it; tests swap in a fake. */
 export interface PaymentGateway {
   readonly mode: CashfreeMode
   createOrder(input: CreateOrderInput): Promise<{ paymentSessionId: string }>
-  /** The successful payment for an order, or null if it isn't paid (yet). */
   findPaidPayment(orderId: string): Promise<PaidPayment | null>
   verifyWebhook(rawBody: Buffer, timestamp: string, signature: string): boolean
 }
@@ -110,7 +105,6 @@ export class CashfreeGateway implements PaymentGateway {
     return { paymentId: String(paid.cf_payment_id), amount: toPaise(paid.payment_amount) }
   }
 
-  /** Cashfree signs `timestamp + raw body` with the secret key, base64-encoded. */
   verifyWebhook(rawBody: Buffer, timestamp: string, signature: string): boolean {
     return safeEqual(hmacSha256Base64(this.secretKey, timestamp + rawBody.toString('utf8')), signature)
   }

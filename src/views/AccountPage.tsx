@@ -26,7 +26,6 @@ export function AccountPage() {
   const user = session.user
   const credits = user?.credits ?? 0
 
-  // Reload the history whenever the balance changes (e.g. after buying credits in the dialog).
   useEffect(() => {
     if (!user) return
     creditsApi.history().then(setHistory).catch((err: unknown) => setHistoryError(errorMessage(err)))

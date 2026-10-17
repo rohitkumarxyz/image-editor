@@ -9,7 +9,6 @@ interface CompareSliderProps {
 
 const KEY_STEP = 5
 
-/** Drag (or use arrow keys) to compare the original with the edited image. */
 export function CompareSlider({ before, after, alt }: CompareSliderProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [split, setSplit] = useState(50)

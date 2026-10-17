@@ -1,4 +1,3 @@
-/** Real before/after results made with this app's AI exact match (see /public/examples). */
 export interface Example {
   id: string
   label: string

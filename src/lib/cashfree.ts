@@ -3,9 +3,7 @@ import type { CheckoutOptions } from '../api/credits'
 const SCRIPT_URL = 'https://sdk.cashfree.com/js/v3/cashfree.js'
 
 export interface CheckoutResult {
-  /** Cashfree is moving this page to a bank / UPI page; it comes back on the return URL. */
   redirected: boolean
-  /** Why checkout ended without a payment (closed, declined…), if Cashfree said. */
   error: string | null
 }
 
@@ -43,10 +41,6 @@ function loadScript(): Promise<void> {
   return loading
 }
 
-/**
- * Opens Cashfree checkout as a popup and resolves when it closes. It never says on its own whether money
- * was taken: the caller always asks our server, which checks with Cashfree.
- */
 export async function openCheckout(options: CheckoutOptions): Promise<CheckoutResult> {
   await loadScript()
   if (!window.Cashfree) throw new Error('Could not load the payment window.')

@@ -8,15 +8,12 @@ export type FontMatch = Pick<TextStyle, 'fontFamily' | 'fontWeight' | 'fontSize'
 export interface CandidateScore {
   family: string
   weight: FontWeight
-  /** Letter spacing at REFERENCE_SIZE that makes this font as wide as the real text. */
   spacing: number
   score: number
 }
 
-/** How well every candidate font fits one region, plus the slant found in it. */
 export interface FontScores {
   rotation: number
-  /** Height the text should fill: the straightened ink height for slanted text, else the box height. */
   height: number
   candidates: CandidateScore[]
 }
@@ -33,7 +30,6 @@ const MAX_ROTATION = 20
 const MIN_ROTATION = 3
 const MAX_ROTATION_POINTS = 20_000
 const MIN_ROTATION_POINTS = 50
-/** A tilt is only used when its rows are clearly sharper than upright; avoids tilting straight text by noise. */
 const ROTATION_GAIN = 1.04
 
 const availability = new Map<string, boolean>()
@@ -43,7 +39,6 @@ function scratchCtx(): CanvasRenderingContext2D {
   return scratch
 }
 
-/** A font is installed/loaded if text drawn with it differs from every generic fallback. */
 function isFontAvailable(family: string): boolean {
   const cached = availability.get(family)
   if (cached !== undefined) return cached
@@ -58,7 +53,6 @@ function isFontAvailable(family: string): boolean {
   return available
 }
 
-/** The real text, scaled to NORM_HEIGHT, as an ink/no-ink mask. */
 function imageMask(base: HTMLCanvasElement, box: Rect, width: number, ink: RGB, bg: RGB): Uint8Array {
   const ctx = get2d(createCanvas(width, NORM_HEIGHT))
   ctx.drawImage(base, box.x, box.y, box.w, box.h, 0, 0, width, NORM_HEIGHT)
@@ -68,10 +62,6 @@ function imageMask(base: HTMLCanvasElement, box: Rect, width: number, ink: RGB, 
   return mask
 }
 
-/**
- * Draws `text` in one candidate font so its ink box lines up with the real one, with whatever letter
- * spacing makes the widths agree. Returns that spacing (at REFERENCE_SIZE) and the drawn mask.
- */
 function renderCandidate(
   text: string,
   family: string,
@@ -106,10 +96,6 @@ function renderCandidate(
   return { spacing, mask }
 }
 
-/**
- * Overlap of the two masks, scaled down when one has much more ink than the other. Without that, bolder
- * fonts always win: thick strokes cover the real ink even where the letter shapes don't line up.
- */
 function overlapScore(a: Uint8Array, b: Uint8Array): number {
   let both = 0
   let either = 0
@@ -138,7 +124,6 @@ function inkPoints(base: HTMLCanvasElement, r: Rect, ink: RGB, bg: RGB): [number
   return step > 1 ? points.filter((_, k) => k % step === 0) : points
 }
 
-/** Sharpness of the row profile after turning the points by -degrees: high when lines of text lie flat. */
 function rowSharpness(points: [number, number][], degrees: number): number {
   const a = (degrees * Math.PI) / 180
   const sin = Math.sin(a)
@@ -153,7 +138,6 @@ function rowSharpness(points: [number, number][], degrees: number): number {
   return sum
 }
 
-/** Tilt of the text in degrees (clockwise), or 0 when it is straight or unclear. */
 function estimateRotation(base: HTMLCanvasElement, r: Rect, ink: RGB, bg: RGB): number {
   const points = inkPoints(base, r, ink, bg)
   if (points.length < MIN_ROTATION_POINTS) return 0
@@ -170,7 +154,6 @@ function estimateRotation(base: HTMLCanvasElement, r: Rect, ink: RGB, bg: RGB): 
   return Math.abs(best) >= MIN_ROTATION && bestScore > upright * ROTATION_GAIN ? best : 0
 }
 
-/** Copy of the box turned by -rotation so the text lies flat; corners are filled with the background. */
 function straighten(base: HTMLCanvasElement, r: Rect, rotation: number, bgHex: string): HTMLCanvasElement {
   const a = (rotation * Math.PI) / 180
   const cos = Math.abs(Math.cos(a))
@@ -185,7 +168,6 @@ function straighten(base: HTMLCanvasElement, r: Rect, rotation: number, bgHex: s
   return out
 }
 
-/** Draws the detected text in each of our fonts and scores how closely each one matches the real ink. */
 export function scoreFonts(base: HTMLCanvasElement, rect: Rect, text: string, inkHex: string, bgHex: string): FontScores | null {
   if (!text.trim()) return null
   const ink = hexToRgb(inkHex)
@@ -211,7 +193,6 @@ export function scoreFonts(base: HTMLCanvasElement, rect: Rect, text: string, in
   return candidates.length ? { rotation, height: rotation ? box.h : rect.h, candidates } : null
 }
 
-/** Turns one candidate into the style values for a region. */
 export function toFontMatch(choice: CandidateScore, text: string, height: number, rotation: number, fontSize?: number): FontMatch {
   const size = fontSize ?? estimateFontSize(text, choice.family, choice.weight, height)
   return {
@@ -223,7 +204,6 @@ export function toFontMatch(choice: CandidateScore, text: string, height: number
   }
 }
 
-/** Finds which of our fonts (and weight) looks most like the text already in the image. */
 export function matchFont(base: HTMLCanvasElement, rect: Rect, text: string, inkHex: string, bgHex: string): FontMatch | null {
   const scores = scoreFonts(base, rect, text, inkHex, bgHex)
   if (!scores) return null

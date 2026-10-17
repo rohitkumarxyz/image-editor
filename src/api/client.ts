@@ -13,7 +13,6 @@ export type ApiErrorCode =
   | 'internal'
   | 'network'
 
-/** An error from our API, with a message that is safe to show to the user. */
 export class ApiError extends Error {
   readonly code: ApiErrorCode
   readonly status: number

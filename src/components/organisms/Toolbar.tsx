@@ -71,7 +71,7 @@ export function Toolbar(props: ToolbarProps) {
 
       <ToolbarGroup className="toolbar-group--tools">
         <Button active={props.tool === 'select'} onClick={() => props.onToolChange('select')} title="Click a box to edit (V)">Select</Button>
-        <Button active={props.tool === 'draw'} onClick={() => props.onToolChange('draw')} title="Drag over text the detector missed (B)">+ Box</Button>
+        <Button active={props.tool === 'draw'} onClick={() => props.onToolChange('draw')} title="Drag a box over text that wasn’t found, and it is read for you (B)">+ Mark text</Button>
         <Button active={props.tool === 'crop'} onClick={() => props.onToolChange('crop')} title="Crop the image (C)"><Icon name="crop" /> Crop</Button>
       </ToolbarGroup>
 

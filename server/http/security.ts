@@ -5,16 +5,10 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 export interface SecurityOptions {
   isProduction: boolean
-  /** Per-request nonce for Next.js's own inline scripts on HTML pages. */
   nonce?: string
-  /** `next dev` needs eval for React's debugging tools; never set in production. */
   allowEval?: boolean
 }
 
-/**
- * Security headers and a strict Content-Security-Policy (the same set Helmet sent). Allowed third parties:
- * Google Fonts (fonts), jsDelivr (Tesseract OCR worker, WASM core and language data), Cashfree (checkout), Google sign-in.
- */
 export function securityHeaders({ isProduction, nonce, allowEval = false }: SecurityOptions): [string, string][] {
   const scriptSrc = ["'self'", "'wasm-unsafe-eval'", 'blob:', 'https://cdn.jsdelivr.net', 'https://sdk.cashfree.com', 'https://accounts.google.com/gsi/client']
   if (nonce) scriptSrc.splice(1, 0, `'nonce-${nonce}'`)
@@ -24,7 +18,6 @@ export function securityHeaders({ isProduction, nonce, allowEval = false }: Secu
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",
-    // Cashfree's SDK posts a form into its checkout iframe.
     "form-action 'self' https://*.cashfree.com",
     `script-src ${scriptSrc.join(' ')}`,
     "worker-src 'self' blob: https://cdn.jsdelivr.net",
@@ -33,12 +26,10 @@ export function securityHeaders({ isProduction, nonce, allowEval = false }: Secu
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
     "font-src 'self' data: https://fonts.gstatic.com",
     'frame-src https://*.cashfree.com https://accounts.google.com/gsi/',
-    // Only behind HTTPS; on plain-http local runs it would break every request.
     ...(isProduction ? ['upgrade-insecure-requests'] : []),
   ]
   return [
     ['Content-Security-Policy', directives.join(';')],
-    // Cashfree may open a popup for UPI / bank pages and needs to talk back to this window.
     ['Cross-Origin-Opener-Policy', 'same-origin-allow-popups'],
     ['Cross-Origin-Resource-Policy', 'same-origin'],
     ['Origin-Agent-Cluster', '?1'],
@@ -53,10 +44,6 @@ export function securityHeaders({ isProduction, nonce, allowEval = false }: Secu
   ]
 }
 
-/**
- * Blocks cross-site request forgery: a request that changes something must come from our own pages.
- * Browsers always send Origin on such requests; a missing or foreign Origin is rejected.
- */
 export function requireSameOrigin(appOrigin: string): Middleware {
   return async (req, next) => {
     if (SAFE_METHODS.has(req.method)) return next()
@@ -67,10 +54,6 @@ export function requireSameOrigin(appOrigin: string): Middleware {
   }
 }
 
-/**
- * The client's IP, skipping `trustProxy` reverse proxies (like Express's `trust proxy`). Next.js puts the
- * socket address in X-Forwarded-For when no proxy sent one, so the last entry is the closest hop.
- */
 export function clientIp(forwardedFor: string | null, trustProxy: number): string {
   const hops = (forwardedFor ?? '')
     .split(',')

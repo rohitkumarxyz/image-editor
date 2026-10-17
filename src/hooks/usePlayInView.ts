@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 
-/** Plays a muted video only while it is on screen; nothing is downloaded before it scrolls into view. */
 export function usePlayInView() {
   const ref = useRef<HTMLVideoElement>(null)
   useEffect(() => {

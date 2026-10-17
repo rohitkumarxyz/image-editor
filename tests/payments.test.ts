@@ -5,7 +5,6 @@ import { SECRET_KEY, signedInClient, startTestServer, type TestServer } from './
 
 const PHONE = '9876543210'
 
-/** Sends the raw text exactly as signed: Cashfree's amounts like 199.00 must not be re-serialised. */
 function webhook(server: TestServer, raw: string, secret = SECRET_KEY) {
   const timestamp = String(Date.now())
   return fetch(`${server.url}/api/payments/webhook`, {
@@ -47,7 +46,6 @@ describe('payments', () => {
     const sent = server.gateway.created.find((o) => o.orderId === orderId)!
     assert.equal(sent.amount, 19900)
     assert.equal(sent.customer.phone, PHONE)
-    // Local http origin: no return / webhook URLs (Cashfree needs https).
     assert.equal(sent.returnUrl, null)
     assert.equal((await client.get('/api/auth/me')).json.user.phone, PHONE)
   })

@@ -11,7 +11,6 @@ interface HeroProps {
   onExample: (example: Example) => void
 }
 
-/** The tool is the hero: drop an image (or pick an example) and the editor opens with it. */
 export function Hero({ freeCredits, examples, error, onFile, onExample }: HeroProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)

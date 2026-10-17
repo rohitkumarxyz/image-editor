@@ -20,7 +20,6 @@ function inkHeight(ctx: CanvasRenderingContext2D, text: string): { ascent: numbe
   return { ascent: m.actualBoundingBoxAscent, descent: m.actualBoundingBoxDescent }
 }
 
-/** Ink width of `text` in a region's font, including its letter spacing. */
 export function textWidth(text: string, style: Pick<TextStyle, 'fontWeight' | 'fontSize' | 'fontFamily' | 'letterSpacing'>): number {
   const ctx = scratchCtx()
   ctx.font = fontString(style)
@@ -29,7 +28,6 @@ export function textWidth(text: string, style: Pick<TextStyle, 'fontWeight' | 'f
   return m.actualBoundingBoxLeft + m.actualBoundingBoxRight + style.letterSpacing * Math.max(0, Array.from(text).length - 1)
 }
 
-/** Picks the font size whose rendered ink height matches the detected box height. */
 export function estimateFontSize(text: string, fontFamily: string, fontWeight: TextStyle['fontWeight'], boxHeight: number): number {
   const ctx = scratchCtx()
   ctx.font = fontString({ fontFamily, fontWeight, fontSize: REFERENCE_SIZE })
@@ -51,10 +49,6 @@ function eraseRegion(ctx: CanvasRenderingContext2D, base: HTMLCanvasElement, reg
 
 const MIN_UPRIGHT_RATIO = 0.25
 
-/**
- * Size of the straight (unrotated) text box inside a detected box. OCR boxes around slanted text are the
- * axis-aligned bounds of the tilted line, so they are taller and wider than the text itself.
- */
 export function uprightRect(rect: Rect, rotation: number): Rect {
   if (!rotation) return rect
   const t = Math.abs((rotation * Math.PI) / 180)
@@ -84,7 +78,6 @@ function drawRegionText(ctx: CanvasRenderingContext2D, region: TextRegion): void
   ctx.textBaseline = 'alphabetic'
   ctx.textAlign = 'left'
 
-  // Baseline comes from the original text so changing letters (e.g. CAPS → lower) doesn't make the line jump.
   const ref = inkHeight(ctx, region.originalText || text)
   const baselineY = rect.y + (rect.h - (ref.ascent + ref.descent)) / 2 + ref.ascent + style.offsetY
 
@@ -114,7 +107,6 @@ export function renderComposite(target: HTMLCanvasElement, base: HTMLCanvasEleme
 
   const edited = regions.filter((r) => r.edited)
   const typed = edited.filter((r) => !r.aiPatch)
-  // Erase everything first so a neighbour's erase never covers text already drawn.
   typed.forEach((r) => eraseRegion(ctx, base, r))
   edited.forEach((r) => r.aiPatch && ctx.drawImage(r.aiPatch.canvas, r.aiPatch.rect.x, r.aiPatch.rect.y))
   typed.forEach((r) => drawRegionText(ctx, r))

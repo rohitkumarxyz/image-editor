@@ -2,13 +2,11 @@ import { AppError } from '../lib/errors.ts'
 
 const tooLarge = () => new AppError('payload_too_large', 'The image is too large.')
 
-/** True for `application/json` and `application/*+json`, like `express.json()`. */
 export function isJson(request: Request): boolean {
   const type = (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
   return type === 'application/json' || (type.startsWith('application/') && type.endsWith('+json'))
 }
 
-/** Reads the body, stopping as soon as it passes `limit` bytes so a huge upload can't fill memory. */
 export async function readRaw(request: Request, limit: number): Promise<Buffer> {
   const declared = Number(request.headers.get('content-length'))
   if (Number.isFinite(declared) && declared > limit) throw tooLarge()
@@ -30,7 +28,6 @@ export async function readRaw(request: Request, limit: number): Promise<Buffer> 
   return Buffer.concat(chunks)
 }
 
-/** Parses a JSON object or array body (strict, like `express.json()`); an empty body is `{}`. */
 export async function readJson(request: Request, limit: number): Promise<unknown> {
   const text = (await readRaw(request, limit)).toString('utf8')
   if (text.length === 0) return {}

@@ -15,16 +15,13 @@ interface AccountDialogsProps {
   freeCredits: number
   googleClientId: string
   onOpen: (dialog: AccountDialog) => void
-  /** `done` after a successful sign-in or purchase; `dismissed` when the user closed the dialog. */
   onClose: (reason: 'done' | 'dismissed') => void
 }
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : 'Something went wrong. Please try again.')
 
-/** Cashfree sends the user back with `?order_id=` after bank / UPI pages that leave the popup. */
 const RETURN_PARAM = 'order_id'
 
-/** Container for everything account-related: signs in, loads prices/history and runs the payment flow. */
 export function AccountDialogs({ dialog, freeCredits, googleClientId, onOpen, onClose }: AccountDialogsProps) {
   const session = useSession()
   const { notify } = useToast()
@@ -63,7 +60,6 @@ export function AccountDialogs({ dialog, freeCredits, googleClientId, onOpen, on
   const close = (reason: 'done' | 'dismissed' = 'dismissed') => {
     setAuthError(null)
     setBuyError(null)
-    // So the next opening shows "Loading…" instead of old rows.
     setHistory(null)
     setHistoryError(null)
     onClose(reason)
@@ -92,12 +88,10 @@ export function AccountDialogs({ dialog, freeCredits, googleClientId, onOpen, on
     setBuyError(null)
     try {
       const checkout = await creditsApi.startCheckout({ packId, phone })
-      // Our modal <dialog> sits above everything and blocks clicks, so it hides while Cashfree's window is open.
       setInCheckout(true)
       const result = await openCheckout(checkout).finally(() => setInCheckout(false))
       if (result.redirected) return
       const credits = await creditsApi.confirm(checkout.orderId).catch((err: unknown) => {
-        // Not paid: Cashfree's own reason (closed, declined…) is clearer than ours.
         if (err instanceof ApiError && err.code === 'conflict' && result.error) throw new Error(result.error)
         throw err
       })

@@ -82,14 +82,12 @@ export function LandingPage({ initialPacks }: { initialPacks: CreditPack[] }) {
   const buy = () => {
     if (!session.user) {
       toast.notify('info', 'Create a free account first; your free AI edits are added right away.')
-      // Show the packs right after sign-up instead of leaving the user on the page.
       openAccount('signup', () => openAccount('credits'))
       return
     }
     openAccount('credits')
   }
 
-  // Paste an image (Ctrl/⌘+V) on the home page to open it in the editor.
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/'))

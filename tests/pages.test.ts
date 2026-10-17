@@ -8,7 +8,6 @@ import { MongoClient } from 'mongodb'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const SERVER = path.join(ROOT, '.next', 'standalone', 'server.js')
-// The production server always runs with NODE_ENV=production, which requires an https origin.
 const ORIGIN = 'https://edit.example.com'
 const MONGODB_URI = process.env.TEST_MONGODB_URI ?? 'mongodb://127.0.0.1:27017'
 const DB_NAME = `image_editor_pages_${process.pid}_${Date.now()}`
@@ -51,11 +50,9 @@ describe('web pages (built Next.js server)', { skip: existsSync(SERVER) ? false 
       },
       stdio: 'ignore',
     })
-    // /api/health answers only once MongoDB is connected and the indexes exist.
     await waitUntilUp(`${url}/api/health`)
   })
   after(async () => {
-    // Wait for the server to exit, or its start-up index writes could re-create the database after the drop.
     if (child && child.exitCode === null) await new Promise((resolve) => child.once('exit', resolve).kill('SIGTERM'))
     const client = await MongoClient.connect(MONGODB_URI)
     await client.db(DB_NAME).dropDatabase()

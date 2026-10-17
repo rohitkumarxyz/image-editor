@@ -8,7 +8,6 @@ import { SectionHeading } from '../../molecules/site/SectionHeading'
 interface PricingSectionProps {
   packs: CreditPack[] | null
   freeCredits: number
-  /** Pack shown as "Most popular". */
   featuredPackId: string
   onBuy: (packId: string) => void
 }

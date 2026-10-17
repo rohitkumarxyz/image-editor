@@ -19,7 +19,6 @@ type Drag =
   | { kind: 'freehand' }
 
 const CORNERS: Corner[] = ['nw', 'ne', 'sw', 'se']
-/** Handle size relative to the image's longer side, so it stays usable at "Fit" zoom. */
 const HANDLE_RATIO = 0.009
 const MIN_FREEHAND_STEP = 2
 
@@ -31,7 +30,6 @@ function opposite(c: Corner): Corner {
   return `${c.startsWith('n') ? 's' : 'n'}${c.endsWith('w') ? 'e' : 'w'}` as Corner
 }
 
-/** Box from a fixed anchor towards the pointer, keeping the aspect and staying inside the image. */
 function boxFrom(anchor: Point, p: Point, aspect: number | null, imageW: number, imageH: number): Rect {
   const dirX = p.x >= anchor.x ? 1 : -1
   const dirY = p.y >= anchor.y ? 1 : -1
@@ -82,7 +80,6 @@ export function CropOverlay({ imageW, imageH, crop, onChange }: CropOverlayProps
       onChange({ points: [p], closed: false })
       return
     }
-    // polygon: each click adds a point; clicking the first point closes the shape
     if (crop.closed) return
     const first = crop.points[0]
     if (first && crop.points.length >= 3 && Math.hypot(p.x - first.x, p.y - first.y) <= handle * 1.5) onChange({ closed: true })

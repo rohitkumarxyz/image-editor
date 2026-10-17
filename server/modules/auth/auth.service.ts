@@ -36,7 +36,6 @@ export class AuthService {
     this.signupCredits = signupCredits
   }
 
-  /** Signs in an existing account with the same email (older password accounts included) or creates a new one. */
   async signInWithGoogle(credential: string): Promise<{ user: PublicUser; token: string; isNew: boolean }> {
     const profile = await this.google.verify(credential)
     const existing = await this.users.findByEmail(profile.email)
@@ -46,7 +45,6 @@ export class AuthService {
     }
 
     const user = await this.users.create(profile)
-    // Null only when a parallel request created the same account first.
     if (!user) return this.signInWithGoogle(credential)
     if (this.signupCredits > 0) {
       const balance = await this.credits.change({
@@ -71,10 +69,6 @@ export class AuthService {
     await this.sessions.deleteAllForUser(user._id)
   }
 
-  /**
-   * Removes the account and its sessions. Payment orders and the credit ledger are kept, because
-   * financial records must be retained; they only reference the (now deleted) account id.
-   */
   async deleteAccount(user: UserDoc): Promise<void> {
     await this.sessions.deleteAllForUser(user._id)
     await this.users.delete(user._id)

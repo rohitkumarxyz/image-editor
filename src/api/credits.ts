@@ -14,7 +14,6 @@ export interface CreditPack {
   id: string
   name: string
   credits: number
-  /** Smallest currency unit (paise). */
   amount: number
   currency: string
 }

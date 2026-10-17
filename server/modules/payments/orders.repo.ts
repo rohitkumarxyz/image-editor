@@ -14,13 +14,11 @@ export class OrdersRepo {
     return order
   }
 
-  /** Looks up by the order id the gateway knows (our `_id` as hex); null for anything that isn't one. */
   findByOrderId(orderId: string): Promise<OrderDoc | null> {
     if (!ObjectId.isValid(orderId) || String(new ObjectId(orderId)) !== orderId) return Promise.resolve(null)
     return this.db.orders.findOne({ _id: new ObjectId(orderId) })
   }
 
-  /** Records the payment; a second call for an already-paid order changes nothing. */
   async markPaid(id: ObjectId, paymentId: string): Promise<void> {
     await this.db.orders.updateOne({ _id: id, status: 'created' }, { $set: { status: 'paid', paymentId, paidAt: new Date() } })
   }

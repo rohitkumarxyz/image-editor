@@ -31,7 +31,6 @@ const COPY: Record<Mode, { eyebrow: string; title: string; accent: string; lead:
   },
 }
 
-/** Only same-site paths, so `?next=` can't send people to another website. */
 function returnPath(): string {
   const next = new URLSearchParams(window.location.search).get('next') ?? '/'
   return next.startsWith('/') && !next.startsWith('//') ? next : '/'

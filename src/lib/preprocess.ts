@@ -2,12 +2,6 @@ import { createCanvas, get2d } from './image'
 
 const THRESHOLD_SENSITIVITY = 0.15
 
-/**
- * Makes a black-and-white copy that is easier to read for OCR (same size, so boxes map 1:1):
- * - uses the darkest colour channel, so coloured ink (green, blue, red) still reads as dark
- * - adaptive threshold (Bradley): each pixel is compared with its neighbourhood mean,
- *   which cancels uneven lighting from phone photos
- */
 export function prepareForOcr(src: HTMLCanvasElement): HTMLCanvasElement {
   const { width, height } = src
   const pixels = get2d(src).getImageData(0, 0, width, height)
@@ -46,5 +40,19 @@ export function prepareForOcr(src: HTMLCanvasElement): HTMLCanvasElement {
 
   const out = createCanvas(width, height)
   get2d(out).putImageData(pixels, 0, 0)
+  return out
+}
+
+export function invertForOcr(src: HTMLCanvasElement): HTMLCanvasElement {
+  const out = createCanvas(src.width, src.height)
+  const ctx = get2d(out)
+  const pixels = get2d(src).getImageData(0, 0, src.width, src.height)
+  const data = pixels.data
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = 255 - data[i]
+    data[i + 1] = 255 - data[i + 1]
+    data[i + 2] = 255 - data[i + 2]
+  }
+  ctx.putImageData(pixels, 0, 0)
   return out
 }

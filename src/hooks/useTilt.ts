@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 
 const MAX_DEG = 8
 
-/** Tilts an element in 3D toward the pointer while hovered (skipped for reduced motion and touch). */
 export function useTilt<T extends HTMLElement>() {
   const ref = useRef<T>(null)
   useEffect(() => {

@@ -14,7 +14,6 @@ export interface TextStyle {
   fontSize: number
   fontWeight: FontWeight
   letterSpacing: number
-  /** Clockwise, in degrees, around the box centre. */
   rotation: number
   color: string
   bgColor: string
@@ -26,7 +25,6 @@ export interface TextStyle {
   fitWidth: boolean
 }
 
-/** AI-redrawn pixels for a region, valid only while the region keeps this text and box. */
 export interface AiPatch {
   canvas: HTMLCanvasElement
   rect: Rect
@@ -61,11 +59,8 @@ export type CropAspect = 'free' | 'original' | '1:1' | '4:5' | '3:2' | '16:9' | 
 export interface CropState {
   shape: CropShape
   aspect: CropAspect
-  /** Corner radius for the rounded shape, as a percentage of the shorter side (0–50). */
   radius: number
-  /** Box for rect / square / rounded / circle / ellipse. */
   rect: Rect | null
-  /** Outline for polygon / freehand. */
   points: Point[]
   closed: boolean
 }

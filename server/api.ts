@@ -25,7 +25,6 @@ import { CashfreeGateway, type PaymentGateway } from './modules/payments/cashfre
 
 const KB = 1024
 const JSON_LIMIT = 100 * KB
-/** AI requests carry the image crop and mask as base64. */
 const AI_JSON_LIMIT = 25 * KB * KB
 const WEBHOOK_LIMIT = KB * KB
 const WEBHOOK_PATH = '/api/payments/webhook'
@@ -33,16 +32,13 @@ const WEBHOOK_PATH = '/api/payments/webhook'
 export interface ApiDeps {
   config: Config
   db: Database
-  /** Overridable for tests. */
   aiProvider?: AiProvider
   paymentGateway?: PaymentGateway | null
   googleVerifier?: GoogleVerifier
 }
 
-/** Handles every `/api/*` request: a web `Request` in, a web `Response` out. */
 export type ApiHandler = (request: Request) => Promise<Response>
 
-/** Loads the signed-in user (if any) onto `req.user`. Never rejects; `requireUser` does that. */
 function loadSession(auth: AuthService, cookie: SessionCookie): Middleware {
   return async (req, next) => {
     const token = req.cookies[cookie.name]
@@ -89,13 +85,10 @@ export function createApi({ config, db, aiProvider, paymentGateway, googleVerifi
       await db.client.db('admin').command({ ping: 1 })
       return Reply.json({ ok: true })
     }),
-    /** Public settings the UI shows (prices come from /payments/packs). */
     get('/api/config', [], () => Reply.json(publicConfig(config, payments.enabled))),
   ]
-  // Signature-verified server-to-server call: no cookies, no Origin, raw body.
   const webhookRoutes = [post('/', [], (req) => paymentsWebhook(payments, req))]
 
-  // Each group has its own limiter instance, as before.
   const mounts: Mount[] = [
     {
       prefix: '/api/auth',

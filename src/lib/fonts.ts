@@ -6,7 +6,6 @@ interface FontInfo {
   family: string
   label: string
   script: FontScript
-  /** Has a real bold file. Fonts without one would get a fake browser bold, so auto-match skips it. */
   bold: boolean
   web: boolean
 }
@@ -47,7 +46,6 @@ export function defaultFontFor(text: string): string {
   return hasDevanagari(text) ? DEVANAGARI_SANS : 'Arial'
 }
 
-/** Fonts worth trying for this text, as family + weight pairs. */
 export function matchCandidates(text: string): { family: string; weight: 'normal' | 'bold' }[] {
   const script: FontScript = hasDevanagari(text) ? 'devanagari' : 'latin'
   return FONTS.filter((f) => f.script === script || f.script === 'both').flatMap((f) => [
@@ -56,7 +54,6 @@ export function matchCandidates(text: string): { family: string; weight: 'normal
   ])
 }
 
-/** Google Fonts used for font matching; only the editor loads this stylesheet. */
 const FONT_STYLESHEET =
   'https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Noto+Serif+Devanagari:wght@400;700&family=Roboto+Mono:wght@400;700&family=Tiro+Devanagari+Hindi&family=Hind:wght@400;700&family=Mukta:wght@400;700&family=Roboto:wght@400;700&family=Roboto+Condensed:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Oswald:wght@400;700&family=Merriweather:wght@400;700&family=Kaushan+Script&family=Caveat+Brush&family=Permanent+Marker&family=Dancing+Script:wght@400;700&family=Pacifico&display=swap'
 
@@ -68,7 +65,6 @@ function ensureFontStylesheet(): Promise<void> {
     link.rel = 'stylesheet'
     link.href = FONT_STYLESHEET
     link.onload = () => resolve()
-    // Without the web fonts the editor still works with system fonts.
     link.onerror = () => resolve()
     document.head.appendChild(link)
   })

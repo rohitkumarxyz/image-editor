@@ -11,11 +11,9 @@ export interface CreditChange {
   delta: number
   reason: LedgerReason
   refId: string | null
-  /** When set, the change is applied at most once per user for this key (purchases, sign-up bonus). */
   onceKey?: string
 }
 
-/** The only place balances change. Every change is one atomic update plus a ledger row. */
 export class CreditsService {
   private readonly db: Database
   private readonly ledger: LedgerRepo
@@ -25,10 +23,6 @@ export class CreditsService {
     this.ledger = ledger
   }
 
-  /**
-   * Applies a credit change and returns the new balance, or null if `onceKey` was already applied.
-   * Spending is conditional on the balance, so concurrent requests can never push it below zero.
-   */
   async change({ userId, delta, reason, refId, onceKey }: CreditChange): Promise<number | null> {
     const filter: Record<string, unknown> = { _id: userId }
     if (delta < 0) filter.credits = { $gte: -delta }
@@ -43,7 +37,6 @@ export class CreditsService {
       throw new AppError('not_found', 'Account not found.')
     }
 
-    // The balance is already correct; a failed ledger write must not undo it, but it must be visible.
     await this.ledger.add({ userId, delta, reason, refId, balanceAfter: user.credits }).catch((err: unknown) =>
       logger.error('ledger_write_failed', { userId: String(userId), delta, reason, refId, error: String(err) }),
     )

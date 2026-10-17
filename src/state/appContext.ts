@@ -4,9 +4,7 @@ import type { AccountDialog } from '../views/AccountDialogs'
 
 export interface AppValue {
   config: PublicConfig
-  /** `then` runs once the user is signed in (e.g. continue the AI edit they clicked); closing the dialog cancels it. */
   openAccount: (dialog: AccountDialog, then?: () => void) => void
-  /** A file picked on another page (e.g. the home page upload box) for the editor to open. */
   setPendingFile: (file: File) => void
   takePendingFile: () => File | null
 }

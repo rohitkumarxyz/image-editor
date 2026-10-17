@@ -1,6 +1,5 @@
 type Level = 'info' | 'warn' | 'error'
 
-/** One JSON object per line, so hosting log viewers can filter by field. */
 function write(level: Level, event: string, fields: Record<string, unknown> = {}): void {
   const line = JSON.stringify({ time: new Date().toISOString(), level, event, ...fields })
   if (level === 'error') console.error(line)

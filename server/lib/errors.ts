@@ -29,7 +29,6 @@ const STATUS: Record<ErrorCode, number> = {
   internal: 500,
 }
 
-/** An error that is safe to show to the user: its message goes into the response as-is. */
 export class AppError extends Error {
   readonly code: ErrorCode
   readonly status: number
@@ -41,7 +40,6 @@ export class AppError extends Error {
   }
 }
 
-/** Known errors become `{ error: { code, message } }`, anything else a generic 500 (logged, never leaked). */
 export function errorBody(err: unknown, request: { method: string; path: string }): { status: number; body: { error: { code: ErrorCode; message: string } } } {
   if (err instanceof AppError) return { status: err.status, body: { error: { code: err.code, message: err.message } } }
   logger.error('unhandled_error', { method: request.method, path: request.path, error: err instanceof Error ? err.stack : String(err) })

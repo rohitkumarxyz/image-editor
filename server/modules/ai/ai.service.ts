@@ -5,7 +5,6 @@ import type { CreditsService } from '../credits/credits.service.ts'
 import type { AiJobsRepo } from './jobs.repo.ts'
 import type { AiProvider, AiWord, DetectInput, ImageEditInput } from './openai.client.ts'
 
-/** Drafts per edit. The browser keeps the best one that passes its quality checks. Fixed here so clients can't raise our cost. */
 const DRAFT_COUNT = 2
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -29,7 +28,6 @@ export class AiService {
     this.limits = limits
   }
 
-  /** Charges first (so a user can't start edits they can't pay for), and gives the credit back if the AI fails. */
   async edit(user: UserDoc, input: Omit<ImageEditInput, 'count'>): Promise<{ jobId: string; images: string[]; credits: number }> {
     const jobId = new ObjectId()
     const cost = this.limits.editCost
@@ -50,10 +48,6 @@ export class AiService {
     return { jobId: String(jobId), images, credits: balance! }
   }
 
-  /**
-   * The browser rejects drafts that put text outside the box, leave it empty or change its colour; then the
-   * user shouldn't pay. Limited per day and to recent edits, since the claim comes from the client.
-   */
   async refund(user: UserDoc, jobId: string): Promise<number> {
     if (!ObjectId.isValid(jobId)) throw new AppError('not_found', 'Edit not found.')
     const now = Date.now()
@@ -67,7 +61,6 @@ export class AiService {
     return (await this.credits.change({ userId: user._id, delta: job.cost, reason: 'ai_edit_refund', refId: jobId }))!
   }
 
-  /** Free but capped per day, since each call costs an OpenAI request. */
   async detect(user: UserDoc, input: DetectInput): Promise<AiWord[]> {
     const used = await this.jobs.countSince(user._id, 'detect', new Date(Date.now() - DAY_MS))
     if (used >= this.limits.detectDailyLimit) {

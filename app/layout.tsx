@@ -16,7 +16,6 @@ const TITLE = 'Image Text Editor · Change text in any image, keep the exact fon
 
 export function generateMetadata(): Metadata {
   return {
-    // Social previews need absolute image URLs.
     metadataBase: new URL(getConfig().APP_ORIGIN),
     title: 'Image Text Editor · Change text in any image, keep the same font',
     description:
@@ -40,7 +39,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="en" data-theme={theme} className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <body>
-        {/* The stylesheet sizes #root to the full window, as in the old single-page app. */}
         <div id="root">
           <Providers initialConfig={publicConfig(config, config.cashfree !== null)}>{children}</Providers>
         </div>

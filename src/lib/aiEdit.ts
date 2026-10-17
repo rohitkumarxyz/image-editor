@@ -3,56 +3,33 @@ import type { AiPatch, Rect, TextRegion } from '../types'
 import { textWidth } from './render'
 import { clampRect, colorDistance, createCanvas, differentInk, get2d, hexToRgb, padRect, type RGB } from './image'
 
-/**
- * Area around the box sent along, so the model can see the original lettering and background. It is sized
- * from the text height, not its width: a long, small line would otherwise send a huge crop where its letters
- * are tiny and other (bigger) lettering dominates, and the model copies that style.
- */
 const CONTEXT_HEIGHT_RATIO = 1.2
 const MIN_CONTEXT = 48
-/** OpenAI size limits: sides multiple of 16, ratio within 1:3..3:1, 655,360..8,294,400 pixels. */
 const SIZE_STEP = 16
-/** Kept a little under OpenAI's 3:1 so rounding the sides to SIZE_STEP can't push it over. */
 const SAFE_ASPECT = 2.9
 const MIN_PIXELS = 655_360
 const TARGET_PIXELS = 1_572_864
 const MAX_EDGE = 3840
 const FEATHER = 5
-/** Edit margin well beyond the feather: the old text never sits in the soft edge, and small AI shifts don't count as overflow. */
 const MIN_EDGE_MARGIN = FEATHER * 2 + 2
-/** Detected boxes are tight; brush/script strokes often poke out, so the AI redraws a little beyond the box. */
 const EDGE_MARGIN_RATIO = 0.08
-/** Spare room added when the new text is wider than the old, since the AI's letters won't match the font exactly. */
 const GROW_SLACK = 1.08
 const SPILL_RING_RATIO = 0.12
 const MIN_SPILL_RING = 4
-/**
- * The model repaints the whole crop, so neighbouring words come back shifted by a few pixels. New ink this
- * close to original ink is that shift, not new text spilling out, and is not counted.
- */
 const SHIFT_TOLERANCE_RATIO = 0.03
 const MIN_SHIFT_TOLERANCE = 3
-/** Share of the ring around the area that may gain new ink before a draft counts as clipped. */
 const MAX_SPILL = 0.01
-/** A pixel "changed" when it moved this far (as a share of the ink↔background distance) from the original. */
 const CHANGE_SHARE = 0.4
-/** The new text must put at least this much of the expected ink (old ink scaled by text length) inside the box. */
 const MIN_INK_KEPT = 0.3
 
 function roundTo(value: number, step: number): number {
   return Math.max(step, Math.round(value / step) * step)
 }
 
-/** Places a span of `size` around `center`, inside [0, limit] when it fits, otherwise centred past the edges. */
 function placeSpan(center: number, size: number, limit: number): number {
   return size <= limit ? Math.min(limit - size, Math.max(0, Math.round(center - size / 2))) : Math.round(center - size / 2)
 }
 
-/**
- * Crop around the edit area with an allowed aspect ratio. Too-long crops first lose context; if the image
- * itself is too narrow (e.g. a scanned form strip) the crop extends past the image and the extra is filled
- * with the background colour, outside the mask.
- */
 function contextCrop(area: Rect, imageW: number, imageH: number): Rect {
   const pad = Math.max(MIN_CONTEXT, Math.round(area.h * CONTEXT_HEIGHT_RATIO))
   let w = Math.min(imageW, area.w + pad * 2)
@@ -72,7 +49,6 @@ function contextCrop(area: Rect, imageW: number, imageH: number): Rect {
   }
 }
 
-/** Output size for the model: same shape as the crop, scaled into OpenAI's allowed pixel range. */
 function modelSize(crop: Rect): { w: number; h: number } {
   const pixels = crop.w * crop.h
   const target = Math.min(TARGET_PIXELS, Math.max(MIN_PIXELS * 1.05, pixels))
@@ -93,10 +69,8 @@ function loadPng(base64: string): Promise<HTMLImageElement> {
   })
 }
 
-/** Fades the outer FEATHER pixels of the patch so its edge blends into the original. */
 const COLOR_BAND = 4
 const COLOR_SMOOTHING = 9
-/** Larger differences at the border are text (e.g. a shifted neighbour letter), not colour drift. */
 const MAX_COLOR_SHIFT = 40
 
 type EdgeShift = (number[] | null)[]
@@ -113,11 +87,6 @@ function medianSmooth(values: (number[] | null)[], window: number): EdgeShift {
   })
 }
 
-/**
- * The model shifts colours slightly across the whole image, so a pasted patch shows as a lighter or darker
- * rectangle on flat or gradient backgrounds. Just outside the edit area the draft should equal the original:
- * the difference there is that drift. It is measured along each edge and removed smoothly across the patch.
- */
 function matchPatchColors(patch: HTMLCanvasElement, draft: HTMLCanvasElement, base: HTMLCanvasElement, crop: Rect, area: Rect): void {
   const original = get2d(base).getImageData(0, 0, base.width, base.height).data
   const drawn = get2d(draft).getImageData(0, 0, draft.width, draft.height).data
@@ -175,12 +144,6 @@ function featherEdges(canvas: HTMLCanvasElement): void {
   ctx.putImageData(pixels, 0, 0)
 }
 
-/**
- * The model treats the mask only as a hint and sometimes draws the new text partly or fully outside it,
- * which would be clipped when pasted back. Measures that: the share of a ring just outside the area that the
- * draft changed strongly (in any colour), ignoring small shifts of the original ink there. The ring includes the
- * soft-edge strip just inside the area, where the paste-back blend would fade any new text.
- */
 function measureSpill(draft: HTMLCanvasElement, base: HTMLCanvasElement, crop: Rect, area: Rect, ink: RGB, bg: RGB): number {
   const ring = Math.max(MIN_SPILL_RING, Math.round(area.h * SPILL_RING_RATIO))
   const outer = clampRect(padRect(area, ring), base.width, base.height)
@@ -211,7 +174,6 @@ function measureSpill(draft: HTMLCanvasElement, base: HTMLCanvasElement, crop: R
     for (let x = 0; x < outer.w; x++) {
       const gx = outer.x + x
       const gy = outer.y + y
-      // Skip the inside of the area, except the soft-edge strip: new text there would be faded by the blend.
       const insideCore =
         gx >= area.x + FEATHER && gx < area.x + area.w - FEATHER && gy >= area.y + FEATHER && gy < area.y + area.h - FEATHER
       if (insideCore) continue
@@ -236,14 +198,9 @@ function inkShare(canvas: HTMLCanvasElement, r: Rect, ink: RGB, bg: RGB): number
 
 const letterCount = (text: string) => text.replace(/\s/g, '').length
 
-/** Share of the strongest contrast a pixel needs to count as the core of a letter stroke. */
 const STROKE_CORE_SHARE = 0.6
 const STROKE_PERCENTILE = 0.98
 
-/**
- * Colour of the letter strokes in an area, independent of how much text it holds: the pixels whose
- * difference from the background is close to the strongest one (anti-aliased edges and background excluded).
- */
 function strokeColor(canvas: HTMLCanvasElement, r: Rect, bg: RGB): string | null {
   const data = get2d(canvas).getImageData(r.x, r.y, r.w, r.h).data
   const distances: number[] = []
@@ -269,10 +226,6 @@ const PROBLEM_MESSAGES: Record<DraftProblem, string> = {
   colour: 'The AI used a different text colour than the original.',
 }
 
-/**
- * Checks one draft before it is used: the new text must be inside the box, actually present, and in the
- * original ink colour (the model sometimes copies a neighbouring word's style or ignores the mask).
- */
 function inkChanged(drawnInk: string | null, originalInk: string | null): boolean {
   return !!drawnInk && !!originalInk && differentInk(drawnInk, originalInk)
 }
@@ -294,10 +247,6 @@ function checkDraft(draft: HTMLCanvasElement, base: HTMLCanvasElement, crop: Rec
   return { canvas: draft, spill, problem }
 }
 
-/**
- * The box fits the old text. When the new text is longer it would be squeezed or cut off at the box edge,
- * so the edit area grows by the extra width (measured in the region's font), in the direction the text runs.
- */
 function roomForText(region: TextRegion): Rect {
   const { rect, style } = region
   const oldWidth = region.originalText ? textWidth(region.originalText, style) : 0
@@ -310,11 +259,6 @@ function roomForText(region: TextRegion): Rect {
   return { ...rect, w: rect.w + extra }
 }
 
-/**
- * Asks the AI to redraw the region with its new text in the original lettering style.
- * Only the edit area is taken from the result, so every pixel outside it stays the original.
- */
-/** The AI ran (and was paid for) but no draft was usable; the credit has been returned when possible. */
 export class AiDraftRejectedError extends Error {
   readonly credits: number | null
 
@@ -326,7 +270,6 @@ export class AiDraftRejectedError extends Error {
 
 export interface AiEditOutcome {
   patch: AiPatch
-  /** Balance after this edit. */
   credits: number
 }
 
@@ -368,7 +311,6 @@ export async function aiReplaceText(base: HTMLCanvasElement, region: TextRegion)
   })
   const drafts = await Promise.all(result.images.map(loadPng))
 
-  // Drafts may come back at another size; map each onto the crop, then keep the best one that passes every check.
   const scored = drafts.map((draft) => {
     const canvas = createCanvas(crop.w, crop.h)
     get2d(canvas).drawImage(draft, 0, 0, crop.w, crop.h)
@@ -376,7 +318,6 @@ export async function aiReplaceText(base: HTMLCanvasElement, region: TextRegion)
   })
   const passing = scored.filter((s) => !s.problem)
   if (passing.length === 0) {
-    // The user didn't get a usable result, so ask for the credit back (the server limits how often).
     const credits = await aiApi.refund(result.jobId).catch(() => null)
     const refundNote = credits !== null ? ' Your credit was returned.' : ''
     throw new AiDraftRejectedError(`${PROBLEM_MESSAGES[scored[0].problem!]}${refundNote} Click “Try again”.`, credits)

@@ -4,7 +4,6 @@ import { parse } from '../../lib/validate.ts'
 import { Reply, get, post, requireUser, type ApiRequest, type Route } from '../../http/router.ts'
 import type { PaymentsService } from './payments.service.ts'
 
-/** Indian 10-digit mobile, or an international number with "+". Spaces, dashes and a +91 prefix are accepted. */
 const phone = z
   .string()
   .trim()
@@ -28,7 +27,6 @@ export function paymentsRoutes(payments: PaymentsService): Route[] {
   ]
 }
 
-/** Runs before the JSON parser and the CSRF check: the signature is computed over the exact raw bytes. */
 export async function paymentsWebhook(payments: PaymentsService, req: ApiRequest): Promise<Reply> {
   const signature = req.headers.get('x-webhook-signature')
   const timestamp = req.headers.get('x-webhook-timestamp')

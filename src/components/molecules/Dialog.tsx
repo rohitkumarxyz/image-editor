@@ -8,7 +8,6 @@ interface DialogProps {
   footer?: ReactNode
 }
 
-/** Native <dialog>: traps focus, closes on Esc and returns focus to where it was, for free. */
 export function Dialog({ open, title, onClose, children, footer }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
 

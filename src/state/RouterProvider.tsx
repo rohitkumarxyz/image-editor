@@ -9,39 +9,30 @@ function scrollToHash(hash: string) {
     window.scrollTo({ top: 0 })
     return
   }
-  // Wait a frame so the target page has rendered.
   requestAnimationFrame(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
 }
 
-/** The app's router on top of Next.js navigation: same `navigate` / leave-guard API the pages already use. */
 export function RouterProvider({ children }: { children: ReactNode }) {
   const path = usePathname()
   const router = useNextRouter()
   const guard = useRef<(() => boolean) | null>(null)
-  /** Hash to scroll to once the next page has rendered. */
   const pendingHash = useRef<string | null>(null)
   const setLeaveGuard = useCallback((next: (() => boolean) | null) => {
     guard.current = next
   }, [])
 
-  /** The page on screen and its history entry; refs so the popstate listener below never has to be re-added. */
   const shownPath = useRef(path)
   const shownState = useRef<unknown>(null)
   useEffect(() => {
     shownPath.current = path
-    // Next.js has written its own state for this page by now (it does so before effects run).
     shownState.current = window.history.state
   }, [path])
 
   useEffect(() => {
     const onPop = (event: PopStateEvent) => {
-      // Back/forward can't be cancelled, so step forward again if the page refuses to leave. Window listeners run
-      // in the order they were added: this one is added once, before Next.js's own (child effects run first), so
-      // it can stop the event before Next.js swaps the page and the editor unmounts with its unsaved work.
       const from = shownPath.current
       if (guard.current && window.location.pathname !== from && !guard.current()) {
         event.stopImmediatePropagation()
-        // Re-adding the page's own Next.js state keeps Next.js from rebuilding the page (and losing its work).
         window.history.pushState(shownState.current, '', from)
       }
     }

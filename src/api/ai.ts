@@ -10,7 +10,6 @@ export interface AiWordBox {
 
 export interface AiEditResult {
   jobId: string
-  /** Base64 PNG drafts. */
   images: string[]
   credits: number
 }

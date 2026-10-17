@@ -12,7 +12,6 @@ import type { CreateOrderInput, PaidPayment, PaymentGateway } from '../server/mo
 
 export const ORIGIN = 'http://localhost:5173'
 export const SECRET_KEY = 'test_cashfree_secret'
-/** Smallest valid PNG header, enough for the server's PNG check. */
 export const PNG_BASE64 = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]).toString('base64')
 
 export class FakeAi implements AiProvider {
@@ -34,7 +33,6 @@ export class FakeAi implements AiProvider {
   }
 }
 
-/** Stands in for Cashfree: tests mark orders as paid with `pay()`. */
 export class FakeGateway implements PaymentGateway {
   readonly mode = 'sandbox' as const
   readonly created: CreateOrderInput[] = []
@@ -58,7 +56,6 @@ export class FakeGateway implements PaymentGateway {
   }
 }
 
-/** Accepts `google:<email>:<name>` as a credential, so tests can sign in without Google. */
 export class FakeGoogle implements GoogleVerifier {
   async verify(credential: string): Promise<GoogleProfile> {
     const [prefix, email, name] = credential.split(':')
@@ -77,7 +74,6 @@ export interface TestServer {
   close: () => Promise<void>
 }
 
-/** Serves the API over plain Node HTTP the way Next.js does: a web Request in, a web Response out. */
 function serve(api: ApiHandler): Server {
   return createServer(async (req: IncomingMessage, res: ServerResponse) => {
     const headers = new Headers()
@@ -85,7 +81,6 @@ function serve(api: ApiHandler): Server {
       if (Array.isArray(value)) value.forEach((v) => headers.append(key, v))
       else if (value !== undefined) headers.set(key, value)
     }
-    // Next.js adds the socket address when no proxy sent X-Forwarded-For.
     if (!headers.has('x-forwarded-for')) headers.set('x-forwarded-for', req.socket.remoteAddress ?? '')
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
     const request = new Request(`http://${req.headers.host}${req.url}`, {
@@ -136,7 +131,6 @@ export async function startTestServer(overrides: Record<string, string> = {}): P
   }
 }
 
-/** Minimal cookie-keeping client that behaves like our own page (same Origin). */
 export class Client {
   private cookie = ''
   private readonly base: string

@@ -3,7 +3,6 @@ import type { Rect } from '../types'
 export type RGB = [number, number, number]
 
 const SAMPLE_BAND = 3
-/** Pixels this far (as a share of the ink↔background distance) from the background count as ink, including faint brush streaks. */
 const INK_EDGE_SHARE = 0.3
 
 export function createCanvas(width: number, height: number): HTMLCanvasElement {
@@ -73,12 +72,7 @@ export function hexToRgb(hex: string): RGB {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
-/** Ink colours further apart than this mean two different print styles. */
 const STYLE_COLOR_DISTANCE = 70
-/**
- * Faded scans pull colours together, so also split when one ink is clearly coloured and the other is
- * neutral (grey/black), even if the plain colour distance is smaller.
- */
 const STYLE_CHROMA_DIFFERENCE = 35
 const STYLE_MIN_DISTANCE = 35
 
@@ -86,7 +80,6 @@ export function colorDistance(a: RGB, b: RGB): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
 }
 
-/** Background = median colour of a thin ring around the box. Ink = the pixels inside that differ most from it. */
 export function sampleColors(base: HTMLCanvasElement, rect: Rect): { bg: string; ink: string } {
   const outer = clampRect(padRect(rect, SAMPLE_BAND + 1), base.width, base.height)
   const inner = clampRect(rect, base.width, base.height)
@@ -118,10 +111,6 @@ export function sampleColors(base: HTMLCanvasElement, rect: Rect): { bg: string;
   return { bg: toHex(bg), ink: toHex(ink) }
 }
 
-/**
- * Fills the box by blending the pixels just outside its edges (top↔bottom and left↔right),
- * so paper texture, lighting and tint carry through instead of leaving a flat patch.
- */
 export function smartFill(ctx: CanvasRenderingContext2D, base: HTMLCanvasElement, area: Rect, colors?: { ink: string; bg: string }): void {
   const r = clampRect(area, base.width, base.height)
   if (r.w === 0 || r.h === 0) return
@@ -134,7 +123,6 @@ export function smartFill(ctx: CanvasRenderingContext2D, base: HTMLCanvasElement
     const lx = Math.min(win.w - 1, Math.max(0, gx - win.x))
     const ly = Math.min(win.h - 1, Math.max(0, gy - win.y))
     const i = (ly * win.w + lx) * 4
-    // A neighbour's letter touching the edge would be smeared across the fill; use the background there instead.
     if (ink && bg && colorDistance([src[i], src[i + 1], src[i + 2]], bg) > INK_EDGE_SHARE * colorDistance(ink, bg)) return bg[c]
     return src[i + c]
   }
@@ -178,7 +166,6 @@ export function pixelDistance(data: Uint8ClampedArray, i: number, c: RGB): numbe
   return Math.hypot(data[i] - c[0], data[i + 1] - c[1], data[i + 2] - c[2])
 }
 
-/** Tight box around the pixels inside `rect` that look like ink rather than background. */
 export function findInkBox(base: HTMLCanvasElement, rect: Rect, ink: RGB, bg: RGB): Rect | null {
   const r = clampRect(rect, base.width, base.height)
   if (r.w === 0 || r.h === 0) return null
@@ -205,7 +192,6 @@ function chroma([r, g, b]: RGB): number {
   return Math.max(r, g, b) - Math.min(r, g, b)
 }
 
-/** True when two ink colours look like different print styles (e.g. green form text vs black typed value). */
 export function differentInk(a: string, b: string): boolean {
   const ca = hexToRgb(a)
   const cb = hexToRgb(b)

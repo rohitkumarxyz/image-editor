@@ -1,6 +1,5 @@
 import type { Point } from '../types'
 
-/** Converts a pointer position over a stretched overlay into image pixel coordinates. */
 export function toImagePoint(overlay: Element, clientX: number, clientY: number, imageW: number, imageH: number): Point {
   const box = overlay.getBoundingClientRect()
   return {

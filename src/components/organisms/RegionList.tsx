@@ -32,7 +32,7 @@ export function RegionList({ regions, selectedId, level, onSelect, onLevelChange
       <Select value={level} options={LEVELS} onChange={onLevelChange} aria-label="How to split detected text" />
       {regions.length > 3 && <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search text…" aria-label="Search detected text" />}
       {regions.length === 0 ? (
-        <p className="muted small">No boxes yet. Click “Detect text”, or use “+ Box” and drag over the text you want to change.</p>
+        <p className="muted small">No boxes yet. Click “Detect text”, or use “+ Mark text” and drag over any text that wasn’t found.</p>
       ) : (
         <ul className="region-list">
           {visible.map((r) => (

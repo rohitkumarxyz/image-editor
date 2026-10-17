@@ -1,7 +1,6 @@
 import type { z } from 'zod'
 import { AppError } from './errors.ts'
 
-/** Parses untrusted input; the first problem becomes a 400 with a readable message. */
 export function parse<T extends z.ZodType>(schema: T, input: unknown): z.infer<T> {
   const result = schema.safeParse(input)
   if (result.success) return result.data

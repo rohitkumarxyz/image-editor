@@ -16,7 +16,6 @@ export function hmacSha256Base64(secret: string, payload: string | Buffer): stri
   return createHmac('sha256', secret).update(payload).digest('base64')
 }
 
-/** Constant-time string comparison, so response timing can't reveal how much of a secret matched. */
 export function safeEqual(a: string, b: string): boolean {
   const left = Buffer.from(a)
   const right = Buffer.from(b)

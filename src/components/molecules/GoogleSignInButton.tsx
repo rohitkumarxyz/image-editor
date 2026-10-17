@@ -12,7 +12,6 @@ const BUTTON_WIDTH = 280
 
 export function GoogleSignInButton({ clientId, text, onCredential, onError }: GoogleSignInButtonProps) {
   const ref = useRef<HTMLDivElement>(null)
-  // Google keeps the first callback it was given, so the latest handlers are read through refs.
   const handlers = useRef({ onCredential, onError })
   useEffect(() => {
     handlers.current = { onCredential, onError }

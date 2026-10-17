@@ -38,7 +38,6 @@ function loadScript(): Promise<void> {
   return loading
 }
 
-/** Draws Google's own sign-in button into `parent`; `onCredential` gets the ID token our server checks. */
 export async function renderGoogleButton(
   parent: HTMLElement,
   options: { clientId: string; text: GoogleButtonOptions['text']; width: number; onCredential: (credential: string) => void },

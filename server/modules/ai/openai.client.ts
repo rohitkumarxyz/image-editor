@@ -7,10 +7,6 @@ const RESPONSES_URL = 'https://api.openai.com/v1/responses'
 const EDIT_QUALITY = 'high'
 const EDIT_TIMEOUT_MS = 180_000
 const DETECT_TIMEOUT_MS = 120_000
-/**
- * USD per 1M tokens for the GPT Image 2.5 models (OpenAI pricing page, checked 2026-10-08). Used only to log and
- * store what each edit cost us, so margins can be checked; billing itself is done by OpenAI.
- */
 const IMAGE_PRICE_PER_M = { textInput: 5, imageInput: 8, output: 30 }
 
 export interface ImageEditInput {
@@ -26,7 +22,6 @@ export interface ImageEditInput {
 
 export interface ImageEditResult {
   images: string[]
-  /** What OpenAI charged for this request, estimated from the reported token usage. */
   costUsd: number | null
 }
 
@@ -45,7 +40,6 @@ function imageCostUsd(usage: ImageUsage | undefined): number | null {
 }
 
 export interface DetectInput {
-  /** data:image/png|jpeg;base64,… */
   image: string
   width: number
   height: number
@@ -59,7 +53,6 @@ export interface AiWord {
   y1: number
 }
 
-/** The AI provider as the service sees it; tests swap in a fake. */
 export interface AiProvider {
   editImage(input: ImageEditInput): Promise<ImageEditResult>
   findWords(input: DetectInput): Promise<AiWord[]>
@@ -93,7 +86,6 @@ interface ResponsesOutput {
   error?: { message?: string }
 }
 
-/** OpenAI's own error text can mention keys, quotas or internals, so it is logged and replaced. */
 const EDIT_FAILED = 'The AI edit failed. Your credit was returned; please try again.'
 const DETECT_FAILED = 'The AI text finder failed. Please try again.'
 
@@ -166,7 +158,6 @@ export class OpenAiProvider implements AiProvider {
     const json = (await response.json().catch(() => null)) as ResponsesOutput | null
     if (!response.ok || !json) throw upstreamFailure('openai_detect_failed', { status: response.status, error: json?.error?.message }, DETECT_FAILED)
 
-    // The answer sits in the "message" item; reasoning items may come before it.
     for (const item of json.output ?? []) {
       for (const part of item.content ?? []) {
         if (part.type === 'refusal') throw upstreamFailure('openai_detect_refused', { refusal: part.refusal }, DETECT_FAILED)

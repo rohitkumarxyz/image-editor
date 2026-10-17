@@ -4,7 +4,6 @@ export interface User {
   id: string
   email: string
   name: string
-  /** Saved at the first purchase; the payment gateway needs it. */
   phone: string | null
   credits: number
 }

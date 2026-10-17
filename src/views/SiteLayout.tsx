@@ -6,7 +6,6 @@ import { useApp } from '../state/appContext'
 import { useSession } from '../state/sessionContext'
 import { useToast } from '../state/toastContext'
 
-/** Header (with account menu) and footer shared by the landing, account and legal pages. */
 export function SiteLayout({ children }: { children: ReactNode }) {
   const session = useSession()
   const { config, openAccount } = useApp()

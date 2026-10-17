@@ -10,7 +10,6 @@ export class UsersRepo {
     this.db = db
   }
 
-  /** Returns null when the email is already registered. */
   async create(input: { email: string; name: string; googleId: string }): Promise<UserDoc | null> {
     const user: UserDoc = { _id: new ObjectId(), ...input, credits: 0, appliedRefs: [], createdAt: new Date() }
     try {

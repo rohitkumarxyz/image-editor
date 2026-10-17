@@ -18,13 +18,13 @@ import { CropPanel } from '../components/organisms/CropPanel'
 import { Toolbar } from '../components/organisms/Toolbar'
 import { UploadDropzone } from '../components/organisms/UploadDropzone'
 import { PanelSection } from '../components/molecules/PanelSection'
-import { aiDetectText } from '../lib/aiDetect'
+import { aiDetectText, aiReadArea } from '../lib/aiDetect'
 import { AiDraftRejectedError, aiReplaceText } from '../lib/aiEdit'
 import { applyCrop, cropBounds, initialCrop, updateCrop } from '../lib/crop'
 import { unifyBlockFonts } from '../lib/fontGroups'
 import { loadWebFonts } from '../lib/fonts'
 import { loadImageFile, rotateCanvas, sampleColors } from '../lib/image'
-import { detectText, mergeWithAi } from '../lib/ocr'
+import { detectText, mergeWithAi, readArea } from '../lib/ocr'
 import { createRegion, resetRegion } from '../lib/regions'
 import { exportPdf } from '../lib/pdf'
 import { createCanvas } from '../lib/image'
@@ -32,8 +32,8 @@ import { estimateFontSize, exportPng, renderComposite, uprightRect } from '../li
 import type { AiStatus, CropState, OcrLanguage, OcrLevel, OcrStatus, Rect, TextRegion, Tool } from '../types'
 
 const IDLE_OCR: OcrStatus = { running: false, message: '', progress: 0, error: null }
+const AREA_TRUSTED_CONFIDENCE = 70
 const IDLE_AI: AiStatus = { regionId: null, running: false, error: null }
-/** Without the AI finder (guests), Tesseract boxes below this confidence are mostly noise (plants, textures). */
 const GUEST_MIN_CONFIDENCE = 60
 const LEAVE_WARNING = 'You have edits you haven’t downloaded yet. Leave and lose them?'
 
@@ -64,9 +64,7 @@ export function EditorPage() {
   const toast = useToast()
   const { config: publicConfig, openAccount: setDialog, takePendingFile } = useApp()
   const { setLeaveGuard } = useRouter()
-  /** The boxes as they were at the last download; edits made after that are unsaved. */
   const [downloadedRegions, setDownloadedRegions] = useState<TextRegion[] | null>(null)
-  /** Crop / rotate changed the picture itself since the last download. */
   const [imageChanged, setImageChanged] = useState(false)
   const autoDetect = useRef(false)
   const guestTipShown = useRef(false)
@@ -78,7 +76,6 @@ export function EditorPage() {
     loadWebFonts()
   }, [])
 
-
   const fitZoom = useCallback((canvas: HTMLCanvasElement) => {
     const ws = workspaceRef.current
     const availW = (ws?.clientWidth ?? window.innerWidth - 380) - 48
@@ -86,11 +83,10 @@ export function EditorPage() {
     setZoom(Math.max(0.1, Math.min(3, availW / canvas.width, availH / canvas.height)))
   }, [])
 
-  // Fit a new image once the workspace exists on screen (its size depends on the layout), and on resize.
   useEffect(() => {
     if (!base) return
     const refit = () => fitZoom(base)
-    // oxlint-disable-next-line react(set-state-in-effect) -- zoom is derived from the measured workspace size
+    // oxlint-disable-next-line react(set-state-in-effect)
     refit()
     window.addEventListener('resize', refit)
     return () => window.removeEventListener('resize', refit)
@@ -119,11 +115,10 @@ export function EditorPage() {
     }
   }
 
-  // Opens a file chosen on the home page, once on mount (taking the file also clears it).
   useEffect(() => {
     const file = takePendingFile()
     if (file) void handleFile(file)
-    // oxlint-disable-next-line react-hooks/exhaustive-deps -- mount-only; handleFile changes every render
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const markDownloaded = () => {
@@ -140,7 +135,6 @@ export function EditorPage() {
     }
   }
 
-  // Warn before closing the tab or leaving through an in-app link while edits aren't downloaded.
   useEffect(() => {
     if (!unsaved) return
     const beforeUnload = (e: BeforeUnloadEvent) => {
@@ -155,15 +149,13 @@ export function EditorPage() {
     }
   }, [unsaved, setLeaveGuard])
 
-  // Detect text automatically after a new image opens (not after rotate / crop of the same image).
   useEffect(() => {
     if (!base || !autoDetect.current) return
     autoDetect.current = false
     void handleDetect()
-    // oxlint-disable-next-line react-hooks/exhaustive-deps -- runs when a new image is set; handleDetect changes every render
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [base])
 
-  // Paste an image (Ctrl/⌘+V) anywhere except into a text field.
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       if (isTypingTarget(e.target)) return
@@ -188,7 +180,6 @@ export function EditorPage() {
     setOcr({ running: true, message: 'Starting…', progress: 0, error: null })
     try {
       await loadWebFonts()
-      // The AI finder runs alongside Tesseract and only adds words Tesseract missed (brush, script, tilted text).
       const [boxes, aiWords] = await Promise.all([
         detectText(base, lang, level, (_message, progress) => setOcr((s) => ({ ...s, message: 'Finding text…', progress }))),
         session.user ? aiDetectText(base).catch((err: unknown) => (err instanceof Error ? err : new Error(String(err)))) : Promise.resolve(null),
@@ -202,7 +193,7 @@ export function EditorPage() {
       setRegions((prev) => [...prev.filter((r) => r.edited || r.source === 'manual'), ...detected])
       setSelectedId(null)
       const aiNote = aiWords instanceof Error ? `${aiWords.message} Brush or script text may be missing.` : null
-      setOcr({ ...IDLE_OCR, error: detected.length === 0 ? 'No text found. Try rotating the image upright, or draw a box with “+ Box”.' : aiNote })
+      setOcr({ ...IDLE_OCR, error: detected.length === 0 ? 'No text found. Use “+ Mark text” and drag over the text, or rotate the image upright.' : aiNote })
       if (!session.user && detected.length > 0 && !guestTipShown.current) {
         guestTipShown.current = true
         toast.notify('info', 'Missing some text? Sign in to also find brush, script and tilted lettering with AI.')
@@ -237,12 +228,25 @@ export function EditorPage() {
     setSelectedId((cur) => (cur === id ? null : cur))
   }, [setRegions])
 
-  const handleDrawRect = (rect: Rect) => {
+  const handleDrawRect = async (rect: Rect) => {
     if (!base) return
-    const region = createRegion(base, rect, '', 'manual')
+    setTool('select')
+    setOcr({ running: true, message: 'Reading the text in your box…', progress: 0, error: null })
+    let found: { text: string; rect: Rect } | null = null
+    try {
+      await loadWebFonts()
+      const local = await readArea(base, rect, lang)
+      found = local && local.confidence >= AREA_TRUSTED_CONFIDENCE ? local : null
+      if (!found && session.user) found = (await aiReadArea(base, rect).catch(() => null)) ?? local
+      else if (!found) found = local
+    } catch {
+      found = null
+    }
+    const usable = found && found.rect.w >= 6 && found.rect.h >= 6 ? found : null
+    const region = createRegion(base, usable?.rect ?? rect, usable?.text ?? '', 'manual')
     setRegions((prev) => [...prev, region])
     setSelectedId(region.id)
-    setTool('select')
+    setOcr({ ...IDLE_OCR, error: usable ? null : 'Could not read the text in that box. Draw a tighter box, or type the new text in the panel.' })
   }
 
   const handleResample = () => {
@@ -262,7 +266,6 @@ export function EditorPage() {
     if (!base || !selected) return
     if (!session.user) {
       toast.notify('info', `Create a free account to use AI exact match. You get ${publicConfig.signupCredits} free edits.`)
-      // Continue this edit as soon as the account exists.
       setDialog('signup', () => aiEditRef.current())
       return
     }
@@ -275,7 +278,6 @@ export function EditorPage() {
     try {
       const { patch: aiPatch, credits } = await aiReplaceText(base, target)
       session.setCredits(credits)
-      // Skip if the user changed the text or moved the box while the AI was working.
       setRegions((prev) =>
         prev.map((r) => (r.id === target.id && r.text === target.text && r.rect === target.rect ? { ...r, aiPatch, edited: true } : r)),
       )
@@ -317,7 +319,6 @@ export function EditorPage() {
     if (!base || !crop || !cropBounds(crop)) return
     const hasEdits = regions.some((r) => r.edited)
     if (hasEdits && !window.confirm('Cropping saves your text edits into the image and removes all boxes. Continue?')) return
-    // Crop the edited picture, so text edits are kept as pixels.
     const composite = createCanvas(base.width, base.height)
     renderComposite(composite, base, regions)
     const cropped = applyCrop(composite, crop)
@@ -496,7 +497,7 @@ export function EditorPage() {
                 <li>Text is found automatically. Sideways photo? Rotate it first.</li>
                 <li>Click a box (or pick a line below) and type the new words. They're drawn in a matching font.</li>
                 <li>For a pixel-perfect result, use <strong>AI exact match</strong> ({publicConfig.aiEditCost} credit per edit).</li>
-                <li>Text missed? Use <strong>+ Box</strong> and drag over it.</li>
+                <li>Text missed? Use <strong>+ Mark text</strong> and drag over it; it is read for you.</li>
                 <li>Press <strong>Hold to compare</strong> under the image, then <strong>Download</strong> (PNG) or PDF.</li>
               </ol>
               <p className="muted small">Shortcuts: Ctrl/⌘+Z undo · Ctrl/⌘+Shift+Z redo · Ctrl/⌘+V paste an image</p>

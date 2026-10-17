@@ -14,7 +14,6 @@ const ZOOM_STEP = 1.25
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 3
 
-/** Floating bar over the image: hold-to-compare, box visibility and zoom. */
 export function CanvasControls({ zoom, showBoxes, onZoomChange, onFit, onShowBoxesChange, onCompare }: CanvasControlsProps) {
   return (
     <div className="canvas-controls">

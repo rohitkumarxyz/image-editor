@@ -1,7 +1,7 @@
 import { createWorker, PSM, type Bbox, type Worker } from 'tesseract.js'
 import type { OcrLanguage, OcrLevel, Rect } from '../types'
-import { differentInk, sampleColors } from './image'
-import { prepareForOcr } from './preprocess'
+import { clampRect, createCanvas, differentInk, get2d, padRect, sampleColors } from './image'
+import { invertForOcr, prepareForOcr } from './preprocess'
 
 interface OcrWord {
   text: string
@@ -10,7 +10,6 @@ interface OcrWord {
 }
 
 export interface OcrBox extends OcrWord {
-  /** Words of a line box, used to split lines that mix ink colours. */
   words?: OcrWord[]
 }
 
@@ -20,6 +19,9 @@ const MIN_CONFIDENCE = 40
 const STRONG_CONFIDENCE = 70
 const OVERLAP_LIMIT = 0.3
 const MIN_BOX_SIZE = 6
+const AREA_TARGET_HEIGHT = 96
+const AREA_MAX_SCALE = 4
+const AREA_PAD = 8
 
 let cached: { lang: OcrLanguage; worker: Promise<Worker> } | null = null
 let onProgress: ProgressHandler | null = null
@@ -56,7 +58,6 @@ function isLikelyText(box: OcrBox): boolean {
   return box.confidence >= MIN_CONFIDENCE && meaningful >= 3
 }
 
-/** Keeps the more confident box wherever two passes found the same text. */
 function mergePasses(passes: OcrBox[][]): OcrBox[] {
   const all = passes.flat().filter(isLikelyText).sort((a, b) => b.confidence - a.confidence)
   const kept: OcrBox[] = []
@@ -101,11 +102,6 @@ function unionRect(rects: Rect[]): Rect {
   return { x, y, w: x2 - x, h: y2 - y }
 }
 
-/**
- * Splits a line wherever the ink colour changes between words, e.g. a green printed label followed by a
- * black typed value. Otherwise the whole line gets one colour and font, and editing the value redraws it
- * in the label's style. Colours are read from the original image (the cleaned OCR copy has none).
- */
 function splitByInkColor(image: HTMLCanvasElement, box: OcrBox): OcrBox[] {
   const words = box.words ?? []
   if (words.length < 2) return [box]
@@ -126,23 +122,16 @@ function splitByInkColor(image: HTMLCanvasElement, box: OcrBox): OcrBox[] {
   }))
 }
 
-/** Below this OCR confidence, a box the AI saw no text at is treated as noise (e.g. plants read as letters). */
 const NOISE_CONFIDENCE = 80
 
 const letters = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
 
-/** True when an OCR box only caught part of the word the AI read (e.g. "Th" of "Things"). */
 function isFragmentOf(ocrText: string, aiText: string): boolean {
   const ocr = letters(ocrText)
   const ai = letters(aiText)
   return ocr.length < ai.length && (ai.includes(ocr) || ocr.length * 2 <= ai.length)
 }
 
-/**
- * Combines Tesseract boxes with the AI finder's words. Tesseract boxes stay where they are good (exact
- * line boxes for printed text); an AI word replaces Tesseract fragments of it, low-confidence Tesseract boxes
- * where the AI saw nothing are dropped, and AI words nothing covers are added.
- */
 export function mergeWithAi<T extends { text: string; rect: Rect }>(found: OcrBox[], aiWords: T[]): { kept: OcrBox[]; added: T[] } {
   const replaced = new Set<OcrBox>()
   const added: T[] = []
@@ -163,10 +152,6 @@ export function mergeWithAi<T extends { text: string; rect: Rect }>(found: OcrBo
   return { kept, added }
 }
 
-/**
- * Runs two passes and merges them: a cleaned black-and-white copy (best for coloured print and
- * uneven lighting) and the original (best for faint dot-matrix / typed text).
- */
 export async function detectText(
   image: HTMLCanvasElement,
   lang: OcrLanguage,
@@ -187,4 +172,33 @@ export async function detectText(
   } finally {
     onProgress = null
   }
+}
+
+export async function readArea(image: HTMLCanvasElement, rect: Rect, lang: OcrLanguage): Promise<OcrWord | null> {
+  const area = clampRect(padRect(rect, AREA_PAD), image.width, image.height)
+  if (area.w < MIN_BOX_SIZE || area.h < MIN_BOX_SIZE) return null
+  const scale = Math.min(AREA_MAX_SCALE, Math.max(1, AREA_TARGET_HEIGHT / rect.h))
+  const crop = createCanvas(Math.round(area.w * scale), Math.round(area.h * scale))
+  const ctx = get2d(crop)
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(image, area.x, area.y, area.w, area.h, 0, 0, crop.width, crop.height)
+
+  const worker = await getWorker(lang)
+  await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK, preserve_interword_spaces: '1' })
+  let best: OcrWord | null = null
+  for (const variant of [crop, prepareForOcr(crop), prepareForOcr(invertForOcr(crop))]) {
+    const { data } = await worker.recognize(variant, {}, { blocks: true })
+    const lines = (data.blocks ?? []).flatMap((b) => b.paragraphs.flatMap((p) => p.lines))
+    const words = lines.flatMap((l) => l.words).filter((w) => w.text.trim())
+    const text = lines.map((l) => l.text.trim()).filter(Boolean).join(' ')
+    if (!words.length || !text.replace(/[^\p{L}\p{N}]/gu, '')) continue
+    if (best && data.confidence <= best.confidence) continue
+    const inside = unionRect(words.map((w) => toRect(w.bbox)))
+    best = {
+      text,
+      confidence: data.confidence,
+      rect: clampRect({ x: area.x + inside.x / scale, y: area.y + inside.y / scale, w: inside.w / scale, h: inside.h / scale }, image.width, image.height),
+    }
+  }
+  return best
 }

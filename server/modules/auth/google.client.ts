@@ -14,7 +14,6 @@ export interface GoogleProfile {
   name: string
 }
 
-/** The Google sign-in check as the auth service sees it; tests swap in a fake. */
 export interface GoogleVerifier {
   verify(credential: string): Promise<GoogleProfile>
 }
@@ -33,7 +32,6 @@ const INVALID = 'Google sign-in failed. Please try again.'
 
 const decodePart = <T>(part: string): T => JSON.parse(Buffer.from(part, 'base64url').toString('utf8')) as T
 
-/** Checks a Google ID token (the `credential` from the Google button) against Google's public keys. */
 export class GoogleIdTokenVerifier implements GoogleVerifier {
   private readonly clientId: string
   private keys: Map<string, JsonWebKey> = new Map()
@@ -74,7 +72,6 @@ export class GoogleIdTokenVerifier implements GoogleVerifier {
   }
 
   private async key(kid: string): Promise<JsonWebKey> {
-    // Google rotates keys; an unknown kid also triggers a refresh.
     if (Date.now() >= this.keysExpireAt || !this.keys.has(kid)) await this.refreshKeys()
     const jwk = this.keys.get(kid)
     if (!jwk) throw new AppError('unauthorized', INVALID)

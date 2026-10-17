@@ -21,7 +21,6 @@ export function hasAspectChoice(shape: CropShape): boolean {
   return isBoxShape(shape) && !SQUARE_SHAPES.includes(shape)
 }
 
-/** Width ÷ height the box must keep, or null when it is free. */
 export function aspectRatio(crop: Pick<CropState, 'shape' | 'aspect'>, imageW: number, imageH: number): number | null {
   if (SQUARE_SHAPES.includes(crop.shape)) return 1
   if (!isBoxShape(crop.shape) || crop.aspect === 'free') return null
@@ -29,7 +28,6 @@ export function aspectRatio(crop: Pick<CropState, 'shape' | 'aspect'>, imageW: n
   return ASPECTS[crop.aspect]
 }
 
-/** Largest box with the given aspect that fits inside `rect`, centred on it. */
 export function fitToAspect(rect: Rect, aspect: number | null): Rect {
   if (!aspect) return rect
   const w = Math.min(rect.w, rect.h * aspect)
@@ -37,12 +35,10 @@ export function fitToAspect(rect: Rect, aspect: number | null): Rect {
   return { x: rect.x + (rect.w - w) / 2, y: rect.y + (rect.h - h) / 2, w, h }
 }
 
-/** Starts with nothing selected, so the first drag draws the crop area instead of moving a full-image box. */
 export function initialCrop(): CropState {
   return { shape: 'rect', aspect: 'free', radius: DEFAULT_RADIUS, rect: null, points: [], closed: false }
 }
 
-/** Applies a settings change and keeps the selection valid for the new shape / aspect. */
 export function updateCrop(crop: CropState, patch: Partial<CropState>, imageW: number, imageH: number): CropState {
   const next = { ...crop, ...patch }
   const shapeChanged = patch.shape !== undefined && patch.shape !== crop.shape
@@ -66,7 +62,6 @@ function boundsOf(points: Point[]): Rect {
   return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y }
 }
 
-/** Bounding box of the selection, or null if nothing croppable is selected yet. */
 export function cropBounds(crop: CropState): Rect | null {
   const r = isBoxShape(crop.shape) ? crop.rect : crop.closed && crop.points.length >= 3 ? boundsOf(crop.points) : null
   return r && r.w >= MIN_CROP && r.h >= MIN_CROP ? r : null
@@ -95,10 +90,6 @@ function ellipsePath({ x, y, w, h }: Rect): string {
   return `M${x} ${cy} A${rx} ${ry} 0 1 0 ${x + w} ${cy} A${rx} ${ry} 0 1 0 ${x} ${cy} Z`
 }
 
-/**
- * SVG path of the selection. The same string draws the outline on screen and, through Path2D,
- * clips the image when cropping, so what you see is exactly what you get.
- */
 export function shapePath(crop: CropState): string {
   if (isBoxShape(crop.shape)) {
     const r = crop.rect
@@ -112,7 +103,6 @@ export function shapePath(crop: CropState): string {
   return `M${first.x} ${first.y} ${rest.map((p) => `L${p.x} ${p.y}`).join(' ')}${crop.closed ? ' Z' : ''}`
 }
 
-/** Cuts the selection out of `source`. Outside a non-rectangular shape the result is transparent. */
 export function applyCrop(source: HTMLCanvasElement, crop: CropState): HTMLCanvasElement | null {
   const bounds = cropBounds(crop)
   if (!bounds) return null

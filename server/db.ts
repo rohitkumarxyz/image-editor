@@ -4,22 +4,15 @@ export interface UserDoc {
   _id: ObjectId
   email: string
   name: string
-  /** Google account id (`sub`); missing on accounts made with a password before Google-only sign-in. */
   googleId?: string
-  /** Mobile number the payment gateway needs; saved at the first purchase. */
   phone?: string
   credits: number
-  /**
-   * Keys of one-time credit grants already applied (paid orders, sign-up bonus). Checked and updated in the
-   * same atomic update as `credits`, so a grant can never be applied twice, even if a request is retried.
-   */
   appliedRefs: string[]
   createdAt: Date
 }
 
 export interface SessionDoc {
   _id: ObjectId
-  /** SHA-256 of the cookie token; the token itself is never stored. */
   tokenHash: string
   userId: ObjectId
   createdAt: Date
@@ -33,7 +26,6 @@ export interface LedgerDoc {
   userId: ObjectId
   delta: number
   reason: LedgerReason
-  /** Order id or AI job id this change belongs to. */
   refId: string | null
   balanceAfter: number
   createdAt: Date
@@ -41,7 +33,6 @@ export interface LedgerDoc {
 
 export type OrderStatus = 'created' | 'paid'
 
-/** The order's own `_id` (as a hex string) is also its order id at Cashfree. */
 export interface OrderDoc {
   _id: ObjectId
   userId: ObjectId
@@ -64,7 +55,6 @@ export interface AiJobDoc {
   kind: AiJobKind
   cost: number
   status: AiJobStatus
-  /** What the AI provider charged us, in USD (from token usage); null if unknown. For margin checks. */
   providerCostUsd?: number | null
   createdAt: Date
   finishedAt: Date | null
@@ -95,7 +85,6 @@ export async function connectDatabase(uri: string, dbName: string): Promise<Data
   return database
 }
 
-/** Left over from Razorpay: a unique index on a field new orders don't have would make every second order clash. */
 const OBSOLETE_ORDER_INDEX = 'razorpayOrderId_1'
 
 async function ensureIndexes(db: Database): Promise<void> {
@@ -103,7 +92,6 @@ async function ensureIndexes(db: Database): Promise<void> {
   await Promise.all([
     db.users.createIndex({ email: 1 }, { unique: true }),
     db.sessions.createIndex({ tokenHash: 1 }, { unique: true }),
-    // MongoDB deletes expired sessions by itself.
     db.sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     db.ledger.createIndex({ userId: 1, createdAt: -1 }),
     db.orders.createIndex({ userId: 1, createdAt: -1 }),

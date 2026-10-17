@@ -4,7 +4,6 @@ import { createCanvas, get2d } from './image'
 import { renderComposite } from './render'
 
 const JPEG_QUALITY = 0.95
-/** CSS pixels → PDF points (72 per inch vs 96 per inch), so the page prints at the image's natural size. */
 const POINTS_PER_PIXEL = 0.75
 
 function jpegBytes(canvas: HTMLCanvasElement): Uint8Array {
@@ -12,10 +11,6 @@ function jpegBytes(canvas: HTMLCanvasElement): Uint8Array {
   return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
 }
 
-/**
- * Builds a one-page PDF with the image as a JPEG. PDF supports JPEG data directly (DCTDecode),
- * so no library is needed: just the objects, their byte offsets (xref) and a trailer.
- */
 function buildPdf(jpeg: Uint8Array, width: number, height: number): Blob {
   const pageW = (width * POINTS_PER_PIXEL).toFixed(2)
   const pageH = (height * POINTS_PER_PIXEL).toFixed(2)
@@ -59,7 +54,6 @@ function buildPdf(jpeg: Uint8Array, width: number, height: number): Blob {
   return new Blob(parts as BlobPart[], { type: 'application/pdf' })
 }
 
-/** Downloads the edited image as a PDF. Transparent areas (e.g. after a circle crop) become white. */
 export function exportPdf(base: HTMLCanvasElement, regions: TextRegion[], fileName: string): void {
   const composite = createCanvas(base.width, base.height)
   renderComposite(composite, base, regions)

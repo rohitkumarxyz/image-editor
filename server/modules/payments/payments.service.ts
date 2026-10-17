@@ -20,7 +20,6 @@ interface WebhookEvent {
 export interface PaymentsOptions {
   packs: CreditPack[]
   currency: string
-  /** Public https URL of the app; return and webhook URLs are only sent to Cashfree when it is https. */
   appOrigin: string
 }
 
@@ -52,7 +51,6 @@ export class PaymentsService {
     return this.options.packs.map((p) => ({ id: p.id, name: p.name, credits: p.credits, amount: p.amount, currency: this.options.currency }))
   }
 
-  /** Creates the Cashfree order and returns what the browser needs to open checkout. */
   async startCheckout(user: UserDoc, input: { packId: string; phone: string }) {
     const pack = this.options.packs.find((p) => p.id === input.packId)
     if (!pack) throw new AppError('bad_request', 'Unknown credit pack.')
@@ -75,7 +73,6 @@ export class PaymentsService {
     return { orderId, paymentSessionId, mode: gateway.mode }
   }
 
-  /** Called by the browser after checkout closes. Asks Cashfree directly, so the browser can't fake a payment. */
   async confirm(user: UserDoc, orderId: string): Promise<number> {
     const order = await this.orders.findByOrderId(orderId)
     if (!order || !order.userId.equals(user._id)) throw new AppError('not_found', 'Order not found.')
@@ -86,7 +83,6 @@ export class PaymentsService {
     return this.fulfilIfFullyPaid(order, payment)
   }
 
-  /** Cashfree's server-to-server notice; covers users who close the tab before the browser confirms. */
   async handleWebhook(rawBody: Buffer, timestamp: string, signature: string): Promise<void> {
     if (!this.requireGateway().verifyWebhook(rawBody, timestamp, signature)) throw new AppError('unauthorized', 'Invalid webhook signature.')
     const event = JSON.parse(rawBody.toString('utf8')) as WebhookEvent
@@ -101,7 +97,6 @@ export class PaymentsService {
       logger.warn('webhook_unknown_order', { orderId })
       return
     }
-    // Answered with 200 either way; an error would only make Cashfree resend the same underpayment.
     if (toPaise(amount) < order.amount) {
       logger.warn('payment_underpaid', { orderId, paid: toPaise(amount), expected: order.amount })
       return
@@ -117,10 +112,6 @@ export class PaymentsService {
     return this.fulfil(order, payment.paymentId)
   }
 
-  /**
-   * Safe to run any number of times, in any order, from the browser and the webhook: the credit grant is
-   * keyed by the order, so it lands exactly once.
-   */
   private async fulfil(order: OrderDoc, paymentId: string): Promise<number> {
     const orderId = String(order._id)
     await this.orders.markPaid(order._id, paymentId)

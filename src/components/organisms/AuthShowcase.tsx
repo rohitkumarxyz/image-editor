@@ -2,9 +2,7 @@ import type { Example } from '../../lib/examples'
 import { useTilt } from '../../hooks/useTilt'
 
 interface AuthShowcaseProps {
-  /** Flips between its before and after image. */
   hero: Example
-  /** Floating cards behind the hero. */
   stack: Example[]
 }
 

@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 
 const MAX_STEPS = 100
-/** Changes with the same key within this time become one undo step (e.g. typing a word). */
 const COALESCE_MS = 1000
 
 interface History<T> {
@@ -12,11 +11,9 @@ interface History<T> {
 
 export interface Undoable<T> {
   value: T
-  /** `coalesceKey` merges quick repeated changes to the same thing into one undo step. */
   set: (update: (prev: T) => T, coalesceKey?: string) => void
   undo: () => void
   redo: () => void
-  /** Replaces the value and forgets history (e.g. a new image). */
   reset: (value: T) => void
   canUndo: boolean
   canRedo: boolean

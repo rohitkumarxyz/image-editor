@@ -8,7 +8,6 @@ import { useRouter } from './routerContext'
 import { SessionProvider } from './SessionProvider'
 import { ToastProvider } from './ToastProvider'
 
-/** The editor keeps its dark workspace; the website pages are light. The server renders the first one. */
 function ThemeSync() {
   const { path } = useRouter()
   useEffect(() => {
@@ -17,7 +16,6 @@ function ThemeSync() {
   return null
 }
 
-/** App-wide state shared by every page; lives in the root layout so it survives page changes. */
 export function Providers({ children, initialConfig }: { children: ReactNode; initialConfig: PublicConfig }) {
   return (
     <RouterProvider>

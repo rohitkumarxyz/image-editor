@@ -11,7 +11,6 @@ const profileBody = z.object({ name })
 export function authRoutes(auth: AuthService, cookie: SessionCookie): Route[] {
   return [
     post('/google', [], async (req) => {
-      // A new token on every sign-in, so a session id seen before login can't be reused (session fixation).
       if (req.sessionToken) await auth.logout(req.sessionToken)
       const { user, token, isNew } = await auth.signInWithGoogle(parse(googleBody, req.body).credential)
       return Reply.json({ user, isNew }, isNew ? 201 : 200).setCookie(cookie, token)
@@ -22,7 +21,6 @@ export function authRoutes(auth: AuthService, cookie: SessionCookie): Route[] {
       return Reply.empty().clearCookie(cookie)
     }),
 
-    // Signed-out visitors get `null`, not an error: every page load asks this.
     post('/profile', [requireUser], async (req) => Reply.json({ user: await auth.updateProfile(req.user!, parse(profileBody, req.body)) })),
 
     post('/logout-all', [requireUser], async (req) => {

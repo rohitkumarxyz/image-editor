@@ -5,7 +5,6 @@ export interface CookieOptions {
   secure: boolean
   sameSite: 'lax'
   path: string
-  /** Milliseconds, like Express; also sets Expires. */
   maxAge?: number
   expires?: Date
 }
@@ -15,10 +14,6 @@ export interface SessionCookie {
   options: CookieOptions
 }
 
-/**
- * HttpOnly so page scripts can't read it, SameSite=Lax against cross-site posts, and in production the
- * `__Host-` prefix, which browsers only accept with Secure, path=/ and no Domain (no subdomain overrides).
- */
 export function sessionCookie(isProduction: boolean): SessionCookie {
   return {
     name: isProduction ? '__Host-sid' : 'sid',
@@ -26,7 +21,6 @@ export function sessionCookie(isProduction: boolean): SessionCookie {
   }
 }
 
-/** Same attribute order and format as Express's `res.cookie` / `res.clearCookie`. */
 export function serializeCookie(name: string, value: string, options: CookieOptions): string {
   const parts = [`${name}=${encodeURIComponent(value)}`]
   if (options.maxAge !== undefined) {

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 
-/** Fades an element in the first time it scrolls into view. */
 export function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)
   useEffect(() => {

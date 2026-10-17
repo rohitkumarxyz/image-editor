@@ -15,7 +15,6 @@ export class SessionsRepo {
     return session
   }
 
-  /** The TTL index removes expired sessions eventually; the date filter covers the gap before it runs. */
   findValid(tokenHash: string): Promise<SessionDoc | null> {
     return this.db.sessions.findOne({ tokenHash, expiresAt: { $gt: new Date() } })
   }

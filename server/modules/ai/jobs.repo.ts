@@ -30,7 +30,6 @@ export class AiJobsRepo {
     return this.db.aiJobs.countDocuments({ userId, kind: 'edit', status: 'refunded', finishedAt: { $gte: since } })
   }
 
-  /** Atomically moves one of the user's recent successful edits to "refunded"; null if it isn't eligible. */
   claimRefund(id: ObjectId, userId: ObjectId, createdAfter: Date): Promise<AiJobDoc | null> {
     return this.db.aiJobs.findOneAndUpdate(
       { _id: id, userId, kind: 'edit', status: 'succeeded', createdAt: { $gte: createdAfter } },

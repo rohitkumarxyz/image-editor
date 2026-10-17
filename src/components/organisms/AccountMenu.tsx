@@ -15,7 +15,6 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?'
 }
 
-/** Avatar button with a dropdown: account, credits and sign out. Closes on outside click and Esc. */
 export function AccountMenu({ user, onBuy, onHistory, onSignOut }: AccountMenuProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)

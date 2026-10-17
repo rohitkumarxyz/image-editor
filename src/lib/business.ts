@@ -1,4 +1,3 @@
-/** Who runs the service; payment gateways need these shown on the site. Same details as wehelpu.in. */
 export const BUSINESS = {
   operator: 'WeHelpU',
   website: 'https://wehelpu.in',

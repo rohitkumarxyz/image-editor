@@ -5,7 +5,6 @@ import { colorDistance, hexToRgb } from './image'
 
 const MAX_COLOR_DISTANCE = 60
 const MAX_SIZE_RATIO = 1.3
-/** Lines count as one block when the gap between them is at most this many line heights. */
 const MAX_LINE_GAP = 1.5
 
 function sameBlock(a: TextRegion, b: TextRegion): boolean {
@@ -24,7 +23,6 @@ function sameBlock(a: TextRegion, b: TextRegion): boolean {
   return overlap > 0
 }
 
-/** Joins regions into blocks: any two lines that sit together in the same colour and size end up in one block. */
 function findBlocks(regions: TextRegion[]): TextRegion[][] {
   const parent = regions.map((_, i) => i)
   const root = (i: number): number => (parent[i] === i ? i : (parent[i] = root(parent[i])))
@@ -45,10 +43,6 @@ function median(values: number[]): number {
 
 const keyOf = (c: CandidateScore) => `${c.family}|${c.weight}`
 
-/**
- * Lines of one block were set in one font, but matching each line alone can pick a different font per line.
- * Picks the font with the best combined score over the block and gives every line that font and one size.
- */
 export function unifyBlockFonts(base: HTMLCanvasElement, regions: TextRegion[]): TextRegion[] {
   const updated = new Map<string, TextRegion>()
 
