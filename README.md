@@ -97,3 +97,4 @@ npm start         # runs it on $PORT (production mode: needs https APP_ORIGIN an
 - Client IPs come from `X-Forwarded-For`. Set `TRUST_PROXY` to the number of proxies in front of the app (1 on
   Render / Railway / Fly). With `TRUST_PROXY=0` and no proxy, a client could send a fake header to dodge IP limits.
 - Not built yet: email verification / password reset (needs an email provider), saved projects, admin dashboard.
+# image-editor
