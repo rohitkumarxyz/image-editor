@@ -11,7 +11,7 @@ export class UsersRepo {
   }
 
   /** Returns null when the email is already registered. */
-  async create(input: { email: string; name: string; passwordHash: string }): Promise<UserDoc | null> {
+  async create(input: { email: string; name: string; googleId: string }): Promise<UserDoc | null> {
     const user: UserDoc = { _id: new ObjectId(), ...input, credits: 0, appliedRefs: [], createdAt: new Date() }
     try {
       await this.db.users.insertOne(user)
@@ -38,8 +38,8 @@ export class UsersRepo {
     await this.db.users.updateOne({ _id: id }, { $set: { phone } })
   }
 
-  async updatePasswordHash(id: ObjectId, passwordHash: string): Promise<void> {
-    await this.db.users.updateOne({ _id: id }, { $set: { passwordHash } })
+  async setGoogleId(id: ObjectId, googleId: string): Promise<void> {
+    await this.db.users.updateOne({ _id: id }, { $set: { googleId } })
   }
 
   async delete(id: ObjectId): Promise<void> {

@@ -52,7 +52,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={value}>
       {children}
-      <AccountDialogs dialog={dialog} freeCredits={config.signupCredits} supportEmail={config.supportEmail} onOpen={setDialog} onClose={closeDialog} />
+      <AccountDialogs dialog={dialog} freeCredits={config.signupCredits} googleClientId={config.googleClientId} onOpen={setDialog} onClose={closeDialog} />
       <ToastStack toasts={toast.toasts} onDismiss={toast.dismiss} />
     </AppContext.Provider>
   )

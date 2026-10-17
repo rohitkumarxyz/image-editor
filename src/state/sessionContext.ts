@@ -5,15 +5,14 @@ export interface SessionValue {
   user: User | null
   /** True until the first "who am I" check finishes. */
   loading: boolean
-  signIn: (input: { email: string; password: string }) => Promise<void>
-  signUp: (input: { name: string; email: string; password: string }) => Promise<void>
+  /** Resolves `true` when the Google account was new and an account was just created. */
+  signInWithGoogle: (credential: string) => Promise<boolean>
   signOut: () => Promise<void>
   /** Keeps the shown balance in sync after the server reports a new one. */
   setCredits: (credits: number) => void
   updateProfile: (input: { name: string }) => Promise<void>
-  changePassword: (input: { currentPassword: string; newPassword: string }) => Promise<void>
   signOutEverywhere: () => Promise<void>
-  deleteAccount: (input: { password: string }) => Promise<void>
+  deleteAccount: () => Promise<void>
 }
 
 export const SessionContext = createContext<SessionValue | null>(null)

@@ -55,7 +55,7 @@ export function AccountPage() {
         <nav className="account__nav" aria-label="Account sections">
           <AppLink href="#profile" className="menu__item">Profile</AppLink>
           <AppLink href="#credits" className="menu__item">Credits & history</AppLink>
-          <AppLink href="#security" className="menu__item">Password & security</AppLink>
+          <AppLink href="#security" className="menu__item">Security</AppLink>
           <AppLink href="#delete" className="menu__item">Delete account</AppLink>
         </nav>
         <div className="account__main">
@@ -71,10 +71,6 @@ export function AccountPage() {
           />
           <CreditsPanel credits={credits} history={history} historyError={historyError} onBuy={() => openAccount('credits')} />
           <SecurityPanel
-            onChangePassword={async (input) => {
-              await session.changePassword(input)
-              toast.notify('success', 'Password changed. Other devices were signed out.')
-            }}
             onSignOutEverywhere={async () => {
               await session.signOutEverywhere().catch((err: unknown) => toast.notify('error', errorMessage(err)))
               toast.notify('info', 'Signed out of all devices.')
@@ -83,8 +79,8 @@ export function AccountPage() {
           />
           <DeleteAccountPanel
             credits={credits}
-            onDelete={async (password) => {
-              await session.deleteAccount({ password })
+            onDelete={async () => {
+              await session.deleteAccount()
               toast.notify('info', 'Your account was deleted.')
               navigate('/')
             }}

@@ -74,10 +74,6 @@ function limiter(windowMs: number, limit: number, message: string, { keyGenerato
 const userOrIp = (req: ApiRequest) => (req.user ? `user:${String(req.user._id)}` : `ip:${ipKey(req.ip)}`)
 
 export const rateLimits = {
-  /** Slows down password guessing; successful sign-ins don't count. */
-  login: (limit: number) =>
-    limiter(15 * MINUTE, limit, 'Too many failed sign-in attempts. Please wait 15 minutes and try again.', { onlyFailures: true }),
-  signup: (limit: number) => limiter(60 * MINUTE, limit, 'Too many new accounts from this network. Please try again later.'),
   api: () => limiter(15 * MINUTE, 300, 'Too many requests. Please slow down.', { keyGenerator: userOrIp }),
   ai: () => limiter(MINUTE, 20, 'Too many AI requests. Please wait a minute.', { keyGenerator: userOrIp }),
   payments: () => limiter(15 * MINUTE, 30, 'Too many payment attempts. Please wait and try again.', { keyGenerator: userOrIp }),

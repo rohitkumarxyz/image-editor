@@ -13,7 +13,7 @@ export type AccountDialog = AuthMode | 'credits' | 'history'
 interface AccountDialogsProps {
   dialog: AccountDialog | null
   freeCredits: number
-  supportEmail: string
+  googleClientId: string
   onOpen: (dialog: AccountDialog) => void
   /** `done` after a successful sign-in or purchase; `dismissed` when the user closed the dialog. */
   onClose: (reason: 'done' | 'dismissed') => void
@@ -25,7 +25,7 @@ const errorMessage = (err: unknown) => (err instanceof Error ? err.message : 'So
 const RETURN_PARAM = 'order_id'
 
 /** Container for everything account-related: signs in, loads prices/history and runs the payment flow. */
-export function AccountDialogs({ dialog, freeCredits, supportEmail, onOpen, onClose }: AccountDialogsProps) {
+export function AccountDialogs({ dialog, freeCredits, googleClientId, onOpen, onClose }: AccountDialogsProps) {
   const session = useSession()
   const { notify } = useToast()
   const [authBusy, setAuthBusy] = useState(false)
@@ -68,17 +68,12 @@ export function AccountDialogs({ dialog, freeCredits, supportEmail, onOpen, onCl
     onClose(reason)
   }
 
-  const submitAuth = async (values: { name: string; email: string; password: string }) => {
+  const submitAuth = async (credential: string) => {
     setAuthBusy(true)
     setAuthError(null)
     try {
-      if (dialog === 'signup') {
-        await session.signUp(values)
-        notify('success', freeCredits > 0 ? `Welcome! You have ${freeCredits} free AI edits.` : 'Welcome!')
-      } else {
-        await session.signIn({ email: values.email, password: values.password })
-        notify('success', 'Signed in.')
-      }
+      const isNew = await session.signInWithGoogle(credential)
+      notify('success', isNew ? (freeCredits > 0 ? `Welcome! You have ${freeCredits} free AI edits.` : 'Welcome!') : 'Signed in.')
       close('done')
     } catch (err) {
       setAuthError(errorMessage(err))
@@ -121,14 +116,11 @@ export function AccountDialogs({ dialog, freeCredits, supportEmail, onOpen, onCl
         open={dialog === 'signin' || dialog === 'signup'}
         mode={dialog === 'signup' ? 'signup' : 'signin'}
         freeCredits={freeCredits}
-        supportEmail={supportEmail}
+        googleClientId={googleClientId}
         busy={authBusy}
         error={authError}
-        onModeChange={(mode) => {
-          setAuthError(null)
-          onOpen(mode)
-        }}
-        onSubmit={submitAuth}
+        onCredential={submitAuth}
+        onError={setAuthError}
         onClose={() => close()}
       />
       <BuyCreditsDialog

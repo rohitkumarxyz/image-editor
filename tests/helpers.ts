@@ -4,8 +4,10 @@ import { Readable } from 'node:stream'
 import { createApi, type ApiHandler } from '../server/api.ts'
 import { loadConfig } from '../server/config.ts'
 import { connectDatabase, type Database } from '../server/db.ts'
+import { AppError } from '../server/lib/errors.ts'
 import { hmacSha256Base64 } from '../server/lib/crypto.ts'
 import type { AiProvider, AiWord, ImageEditResult } from '../server/modules/ai/openai.client.ts'
+import type { GoogleProfile, GoogleVerifier } from '../server/modules/auth/google.client.ts'
 import type { CreateOrderInput, PaidPayment, PaymentGateway } from '../server/modules/payments/cashfree.client.ts'
 
 export const ORIGIN = 'http://localhost:5173'
@@ -56,6 +58,17 @@ export class FakeGateway implements PaymentGateway {
   }
 }
 
+/** Accepts `google:<email>:<name>` as a credential, so tests can sign in without Google. */
+export class FakeGoogle implements GoogleVerifier {
+  async verify(credential: string): Promise<GoogleProfile> {
+    const [prefix, email, name] = credential.split(':')
+    if (prefix !== 'google' || !email) throw new AppError('unauthorized', 'Google sign-in failed. Please try again.')
+    return { googleId: `g-${email.toLowerCase()}`, email: email.toLowerCase(), name: name || 'Test' }
+  }
+}
+
+export const googleCredential = (email: string, name = 'Test') => `google:${email}:${name}`
+
 export interface TestServer {
   url: string
   db: Database
@@ -100,15 +113,14 @@ export async function startTestServer(overrides: Record<string, string> = {}): P
     MONGODB_URI: process.env.TEST_MONGODB_URI ?? 'mongodb://127.0.0.1:27017',
     MONGODB_DB: dbName,
     OPENAI_API_KEY: 'sk-test-not-used-0000000000',
-    SIGNUP_LIMIT_PER_HOUR: '1000',
     SUPPORT_EMAIL: 'support@example.com',
-    LOGIN_FAILURE_LIMIT: '1000',
+    GOOGLE_CLIENT_ID: 'test-client-id.apps.googleusercontent.com',
     ...overrides,
   })
   const db = await connectDatabase(config.MONGODB_URI, config.MONGODB_DB)
   const ai = new FakeAi()
   const gateway = new FakeGateway()
-  const server = serve(createApi({ config, db, aiProvider: ai, paymentGateway: gateway }))
+  const server = serve(createApi({ config, db, aiProvider: ai, paymentGateway: gateway, googleVerifier: new FakeGoogle() }))
   await new Promise<void>((resolve) => server.listen(0, resolve))
   const { port } = server.address() as AddressInfo
   return {
@@ -163,7 +175,7 @@ let emailCounter = 0
 export async function signedInClient(server: TestServer): Promise<Client> {
   const client = new Client(server.url)
   emailCounter++
-  const res = await client.post('/api/auth/signup', { email: `user${emailCounter}_${Date.now()}@example.com`, password: 'correct-horse', name: 'Test' })
+  const res = await client.post('/api/auth/google', { credential: googleCredential(`user${emailCounter}_${Date.now()}@example.com`) })
   if (res.status !== 201) throw new Error(`signup failed: ${JSON.stringify(res.json)}`)
   return client
 }

@@ -4,7 +4,8 @@ export interface UserDoc {
   _id: ObjectId
   email: string
   name: string
-  passwordHash: string
+  /** Google account id (`sub`); missing on accounts made with a password before Google-only sign-in. */
+  googleId?: string
   /** Mobile number the payment gateway needs; saved at the first purchase. */
   phone?: string
   credits: number

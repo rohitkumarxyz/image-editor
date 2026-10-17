@@ -17,6 +17,7 @@ export const DEFAULT_CONFIG: PublicConfig = {
   paymentsEnabled: false,
   businessName: 'Image Text Editor',
   supportEmail: '',
+  googleClientId: '',
 }
 
 export const AppContext = createContext<AppValue | null>(null)

@@ -28,7 +28,7 @@ function content(kind: LegalKind, business: string, email: string): { title: str
             </ul>
             <p>We may suspend accounts that break these rules, without refund of credits used for prohibited content.</p>
             <h2>Accounts</h2>
-            <p>Keep your password safe. You are responsible for activity in your account. One person per account.</p>
+            <p>You sign in with your Google account; keep it secure. You are responsible for activity in your account. One person per account.</p>
             <h2>Credits and payments</h2>
             <p>Credits are sold in packs, are charged in advance through Cashfree and do not expire. One credit is used per AI edit. See the refund policy for when credits are returned.</p>
             <h2>AI results</h2>
@@ -47,7 +47,7 @@ function content(kind: LegalKind, business: string, email: string): { title: str
           <>
             <h2>What we store</h2>
             <ul>
-              <li>Account: your name, email address and a one-way hash of your password (never the password itself).</li>
+              <li>Account: your name, email address and Google account id, received from Google when you sign in. We never see your Google password.</li>
               <li>Credits: your balance and a history of purchases, AI edits and returned credits.</li>
               <li>Payments: your mobile number (the payment gateway requires it) and order and payment ids from Cashfree. Card and UPI details are handled by Cashfree, not by us.</li>
               <li>A session cookie that keeps you signed in. We don't use advertising or tracking cookies.</li>

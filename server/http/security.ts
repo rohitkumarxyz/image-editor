@@ -13,10 +13,10 @@ export interface SecurityOptions {
 
 /**
  * Security headers and a strict Content-Security-Policy (the same set Helmet sent). Allowed third parties:
- * Google Fonts (fonts), jsDelivr (Tesseract OCR worker, WASM core and language data), Cashfree (checkout).
+ * Google Fonts (fonts), jsDelivr (Tesseract OCR worker, WASM core and language data), Cashfree (checkout), Google sign-in.
  */
 export function securityHeaders({ isProduction, nonce, allowEval = false }: SecurityOptions): [string, string][] {
-  const scriptSrc = ["'self'", "'wasm-unsafe-eval'", 'blob:', 'https://cdn.jsdelivr.net', 'https://sdk.cashfree.com']
+  const scriptSrc = ["'self'", "'wasm-unsafe-eval'", 'blob:', 'https://cdn.jsdelivr.net', 'https://sdk.cashfree.com', 'https://accounts.google.com/gsi/client']
   if (nonce) scriptSrc.splice(1, 0, `'nonce-${nonce}'`)
   if (allowEval) scriptSrc.push("'unsafe-eval'")
   const directives = [
@@ -27,11 +27,11 @@ export function securityHeaders({ isProduction, nonce, allowEval = false }: Secu
     "form-action 'self'",
     `script-src ${scriptSrc.join(' ')}`,
     "worker-src 'self' blob: https://cdn.jsdelivr.net",
-    "connect-src 'self' data: blob: https://cdn.jsdelivr.net https://*.cashfree.com",
+    "connect-src 'self' data: blob: https://cdn.jsdelivr.net https://*.cashfree.com https://accounts.google.com/gsi/",
     "img-src 'self' data: blob: https://*.cashfree.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
     "font-src 'self' data: https://fonts.gstatic.com",
-    'frame-src https://*.cashfree.com',
+    'frame-src https://*.cashfree.com https://accounts.google.com/gsi/',
     // Only behind HTTPS; on plain-http local runs it would break every request.
     ...(isProduction ? ['upgrade-insecure-requests'] : []),
   ]

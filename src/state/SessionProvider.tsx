@@ -16,27 +16,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false))
   }, [])
 
-  const signIn = useCallback(async (input: { email: string; password: string }) => setUser(await authApi.signIn(input)), [])
-  const signUp = useCallback(async (input: { name: string; email: string; password: string }) => setUser(await authApi.signUp(input)), [])
+  const signInWithGoogle = useCallback(async (credential: string) => {
+    const { user, isNew } = await authApi.signInWithGoogle(credential)
+    setUser(user)
+    return isNew
+  }, [])
   const signOut = useCallback(async () => {
     await authApi.signOut()
     setUser(null)
   }, [])
   const setCredits = useCallback((credits: number) => setUser((u) => (u ? { ...u, credits } : u)), [])
   const updateProfile = useCallback(async (input: { name: string }) => setUser(await authApi.updateProfile(input)), [])
-  const changePassword = useCallback((input: { currentPassword: string; newPassword: string }) => authApi.changePassword(input), [])
   const signOutEverywhere = useCallback(async () => {
     await authApi.signOutEverywhere()
     setUser(null)
   }, [])
-  const deleteAccount = useCallback(async (input: { password: string }) => {
-    await authApi.deleteAccount(input)
+  const deleteAccount = useCallback(async () => {
+    await authApi.deleteAccount()
     setUser(null)
   }, [])
 
   const value = useMemo<SessionValue>(
-    () => ({ user, loading, signIn, signUp, signOut, setCredits, updateProfile, changePassword, signOutEverywhere, deleteAccount }),
-    [user, loading, signIn, signUp, signOut, setCredits, updateProfile, changePassword, signOutEverywhere, deleteAccount],
+    () => ({ user, loading, signInWithGoogle, signOut, setCredits, updateProfile, signOutEverywhere, deleteAccount }),
+    [user, loading, signInWithGoogle, signOut, setCredits, updateProfile, signOutEverywhere, deleteAccount],
   )
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }

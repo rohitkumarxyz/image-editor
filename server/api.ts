@@ -12,6 +12,7 @@ import { AiJobsRepo } from './modules/ai/jobs.repo.ts'
 import { OpenAiProvider, type AiProvider } from './modules/ai/openai.client.ts'
 import { authRoutes } from './modules/auth/auth.routes.ts'
 import { AuthService } from './modules/auth/auth.service.ts'
+import { GoogleIdTokenVerifier, type GoogleVerifier } from './modules/auth/google.client.ts'
 import { SessionsRepo } from './modules/auth/sessions.repo.ts'
 import { UsersRepo } from './modules/auth/users.repo.ts'
 import { creditsRoutes } from './modules/credits/credits.routes.ts'
@@ -35,6 +36,7 @@ export interface ApiDeps {
   /** Overridable for tests. */
   aiProvider?: AiProvider
   paymentGateway?: PaymentGateway | null
+  googleVerifier?: GoogleVerifier
 }
 
 /** Handles every `/api/*` request: a web `Request` in, a web `Response` out. */
@@ -60,10 +62,10 @@ const isWithin = (path: string, prefix: string) => {
   return lower === prefix || lower.startsWith(`${prefix}/`)
 }
 
-export function createApi({ config, db, aiProvider, paymentGateway }: ApiDeps): ApiHandler {
+export function createApi({ config, db, aiProvider, paymentGateway, googleVerifier }: ApiDeps): ApiHandler {
   const credits = new CreditsService(db, new LedgerRepo(db))
   const users = new UsersRepo(db)
-  const auth = new AuthService(users, new SessionsRepo(db), credits, config.SIGNUP_FREE_CREDITS)
+  const auth = new AuthService(users, new SessionsRepo(db), credits, googleVerifier ?? new GoogleIdTokenVerifier(config.GOOGLE_CLIENT_ID), config.SIGNUP_FREE_CREDITS)
   const payments = new PaymentsService(
     paymentGateway !== undefined
       ? paymentGateway
@@ -95,6 +97,7 @@ export function createApi({ config, db, aiProvider, paymentGateway }: ApiDeps): 
         paymentsEnabled: payments.enabled,
         businessName: config.BUSINESS_NAME,
         supportEmail: config.SUPPORT_EMAIL,
+        googleClientId: config.GOOGLE_CLIENT_ID,
       }),
     ),
   ]
@@ -106,7 +109,7 @@ export function createApi({ config, db, aiProvider, paymentGateway }: ApiDeps): 
     {
       prefix: '/api/auth',
       middleware: [rateLimits.api()],
-      routes: authRoutes(auth, cookie, { signup: rateLimits.signup(config.SIGNUP_LIMIT_PER_HOUR), login: rateLimits.login(config.LOGIN_FAILURE_LIMIT) }),
+      routes: authRoutes(auth, cookie),
     },
     { prefix: '/api/credits', middleware: [rateLimits.api()], routes: creditsRoutes(credits) },
     { prefix: '/api/payments', middleware: [rateLimits.payments()], routes: paymentsRoutes(payments) },

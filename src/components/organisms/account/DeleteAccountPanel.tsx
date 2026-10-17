@@ -1,16 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Button } from '../../atoms/Button'
 import { Checkbox } from '../../atoms/Checkbox'
-import { PasswordInput } from '../../atoms/PasswordInput'
-import { Field } from '../../molecules/Field'
 
 interface DeleteAccountPanelProps {
   credits: number
-  onDelete: (password: string) => Promise<void>
+  onDelete: () => Promise<void>
 }
 
 export function DeleteAccountPanel({ credits, onDelete }: DeleteAccountPanelProps) {
-  const [password, setPassword] = useState('')
   const [understood, setUnderstood] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -20,7 +17,7 @@ export function DeleteAccountPanel({ credits, onDelete }: DeleteAccountPanelProp
     setBusy(true)
     setError(null)
     try {
-      await onDelete(password)
+      await onDelete()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete the account.')
       setBusy(false)
@@ -34,13 +31,10 @@ export function DeleteAccountPanel({ credits, onDelete }: DeleteAccountPanelProp
         This permanently deletes your account{credits > 0 ? ` and your ${credits} remaining credit${credits === 1 ? '' : 's'}` : ''}. It can't be undone.
       </p>
       <form className="form" onSubmit={submit}>
-        <Field label="Enter your password to confirm">
-          <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required maxLength={128} />
-        </Field>
         <Checkbox checked={understood} label="I understand this can't be undone" onChange={setUnderstood} />
         {error && <p className="error" role="alert">{error}</p>}
         <div>
-          <Button variant="danger" type="submit" disabled={busy || !password || !understood}>
+          <Button variant="danger" type="submit" disabled={busy || !understood}>
             {busy ? 'Deleting…' : 'Delete my account'}
           </Button>
         </div>

@@ -6,6 +6,7 @@ export interface PublicConfig {
   paymentsEnabled: boolean
   businessName: string
   supportEmail: string
+  googleClientId: string
 }
 
 export const configApi = {

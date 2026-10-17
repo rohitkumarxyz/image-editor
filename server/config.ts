@@ -38,6 +38,8 @@ const envSchema = z.object({
   MONGODB_DB: z.string().min(1).default('image_editor'),
 
   OPENAI_API_KEY: z.string().min(20),
+  /** OAuth client id from Google Cloud Console; public, it is sent to the browser for the sign-in button. */
+  GOOGLE_CLIENT_ID: z.string().min(1),
   OPENAI_EDIT_MODEL: z.string().default('gpt-image-2.5-sunburst'),
   OPENAI_VISION_MODEL: z.string().default('gpt-6.1-sol'),
 
@@ -56,10 +58,6 @@ const envSchema = z.object({
   AI_DETECT_DAILY_LIMIT: z.coerce.number().int().min(0).default(30),
   REFUND_DAILY_LIMIT: z.coerce.number().int().min(0).default(5),
   REFUND_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
-  /** New accounts per IP per hour; each one gets free credits, so this also limits credit farming. */
-  SIGNUP_LIMIT_PER_HOUR: z.coerce.number().int().positive().default(5),
-  /** Failed sign-ins per IP per 15 minutes. */
-  LOGIN_FAILURE_LIMIT: z.coerce.number().int().positive().default(10),
   /** Optional JSON array overriding the credit packs, e.g. [{"id":"starter","name":"Starter","credits":10,"amount":9900}] */
   CREDIT_PACKS: z.string().optional(),
 })
