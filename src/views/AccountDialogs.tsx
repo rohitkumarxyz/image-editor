@@ -32,6 +32,7 @@ export function AccountDialogs({ dialog, freeCredits, googleClientId, onOpen, on
   const [authError, setAuthError] = useState<string | null>(null)
   const [packs, setPacks] = useState<{ packs: CreditPack[]; enabled: boolean } | null>(null)
   const [buyingPack, setBuyingPack] = useState<string | null>(null)
+  const [inCheckout, setInCheckout] = useState(false)
   const [buyError, setBuyError] = useState<string | null>(null)
   const [history, setHistory] = useState<LedgerEntry[] | null>(null)
   const [historyError, setHistoryError] = useState<string | null>(null)
@@ -91,7 +92,9 @@ export function AccountDialogs({ dialog, freeCredits, googleClientId, onOpen, on
     setBuyError(null)
     try {
       const checkout = await creditsApi.startCheckout({ packId, phone })
-      const result = await openCheckout(checkout)
+      // Our modal <dialog> sits above everything and blocks clicks, so it hides while Cashfree's window is open.
+      setInCheckout(true)
+      const result = await openCheckout(checkout).finally(() => setInCheckout(false))
       if (result.redirected) return
       const credits = await creditsApi.confirm(checkout.orderId).catch((err: unknown) => {
         // Not paid: Cashfree's own reason (closed, declined…) is clearer than ours.
@@ -125,7 +128,7 @@ export function AccountDialogs({ dialog, freeCredits, googleClientId, onOpen, on
       />
       <BuyCreditsDialog
         key={dialog === 'credits' ? 'buy-open' : 'buy-closed'}
-        open={dialog === 'credits'}
+        open={dialog === 'credits' && !inCheckout}
         balance={session.user?.credits ?? 0}
         packs={packs?.packs ?? null}
         paymentsEnabled={packs?.enabled ?? false}
@@ -133,7 +136,9 @@ export function AccountDialogs({ dialog, freeCredits, googleClientId, onOpen, on
         busyPackId={buyingPack}
         error={buyError}
         onBuy={buy}
-        onClose={() => close()}
+        onClose={() => {
+          if (!buyingPack) close()
+        }}
       />
       <HistoryDialog open={dialog === 'history'} entries={history} error={historyError} onClose={() => close()} />
     </>
